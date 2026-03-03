@@ -30,3 +30,5 @@ run/
 *.jar
 *.war
 *.class
+
+.gigaide/
