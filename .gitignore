@@ -32,3 +32,4 @@ run/
 *.class
 
 .gigaide/
+.brahma-gateway/target
