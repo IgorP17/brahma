@@ -32,4 +32,8 @@ run/
 *.class
 
 .gigaide/
-.brahma-gateway/target/
+
+
+# Maven build output
+/target/
+**/target/
