@@ -22,54 +22,71 @@ public class GatewayResource {
     @Inject
     DataSource dataSource;
 
+    @Inject
+    TerminalRegistrationProducer kafkaProducer;
+
     // 🔑 Правильный способ создать ObjectMapper (не newInstance!)
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @POST
     @Path("/register")
-    @Transactional
     public Response registerTerminal(TerminalRegistration registration) {
         String id = registration.id;
         Map<String, Object> data = registration.data;
         String status = "NOT_REGISTERED";
 
-        // Сериализуем Map в JSON-строку
         String dataJson;
         try {
-            dataJson = mapper.writeValueAsString(data); // ✅ работает
+            dataJson = mapper.writeValueAsString(data);
         } catch (Exception e) {
-            return Response.status(500).entity("{\"error\":\"JSON serialize failed: " + e.getMessage() + "\"}").build();
+            return Response.status(500).entity("{\"error\":\"JSON serialize failed\"}").build();
         }
 
-        String sql = """
-                INSERT INTO gateway.terminals (id, data, status, created_at, updated_at)
-                VALUES (?, ?::jsonb, ?, ?, ?)
-                ON CONFLICT (id) DO UPDATE SET
-                    data = EXCLUDED.data::jsonb,
-                    status = EXCLUDED.status,
-                    updated_at = CURRENT_TIMESTAMP
-                """;
+        // --- Выполняем JDBC вручную с транзакцией ---
+        try (Connection conn = dataSource.getConnection()) {
+            conn.setAutoCommit(false); // начинаем транзакцию
 
-        try (Connection conn = dataSource.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            String sql = """
+            INSERT INTO gateway.terminals (id, data, status, created_at, updated_at)
+            VALUES (?, ?::jsonb, ?, ?, ?)
+            ON CONFLICT (id) DO UPDATE SET
+                data = EXCLUDED.data::jsonb,
+                status = EXCLUDED.status,
+                updated_at = CURRENT_TIMESTAMP
+            """;
 
-            ps.setString(1, id);
-            ps.setString(2, dataJson);
-            ps.setString(3, status);
-            ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-            ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, id);
+                ps.setString(2, dataJson);
+                ps.setString(3, status);
+                ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
+                ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
 
-            ps.executeUpdate();
-
+                ps.executeUpdate();
+                conn.commit(); // коммитим БД-транзакцию
+            } catch (Exception e) {
+                conn.rollback();
+                throw e;
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return Response.status(500).entity("{\"error\":\"DB error: " + e.getMessage() + "\"}").build();
+            return Response.status(500).entity("{\"error\":\"DB\"}").build();
+        }
+
+        // 📤 Теперь, ПОСЛЕ коммита БД, отправляем в Kafka
+        System.out.println("🐛 DEBUG: Sending to Kafka AFTER DB commit...");
+        try {
+            kafkaProducer.send(id, dataJson);
+            System.out.println("📤 Kafka: sent registration for " + id);
+        } catch (Exception e) {
+            System.err.println("❌ Kafka send failed: " + e.getMessage());
+            // Не ломаем ответ — терминал уже сохранён
         }
 
         return Response.ok()
                 .entity("{\"status\":\"pending\",\"id\":\"" + id + "\"}")
                 .build();
-    }
+        }
 
     @GET
     @Path("/health")
