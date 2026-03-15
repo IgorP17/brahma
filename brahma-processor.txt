@@ -1,0 +1,345 @@
+Шаг 1: Сгенерим проект
+В корне ~/brahma:
+
+cd ~/brahma
+mvn io.quarkus.platform:quarkus-maven-plugin:3.6.0:create \
+  -DprojectGroupId=com.example \
+  -DprojectArtifactId=brahma-processor \
+  -DclassName="com.example.processor.ProcessorResource" \
+  -Dpath="/health" \
+  -Dextensions="resteasy-reactive,smallrye-reactive-messaging-kafka,jdbc-postgresql,hibernate-orm-panache"
+
+Структура файлов:
+~/brahma/brahma-processor/
+├── pom.xml
+├── src/main/resources/application.properties
+├── src/main/java/com/example/processor/
+│   ├── TerminalRegistrationMessage.java
+│   ├── TerminalRegisteredMessage.java
+│   ├── Terminal.java
+│   ├── TerminalRegistrationConsumer.java
+│   └── ProcessorResource.java
+└── src/main/resources/db/
+    └── migration/
+        └── V1__Create_terminals_table.sql
+
+1. pom.xml
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>brahma-processor</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+    <properties>
+        <compiler-plugin.version>3.11.0</compiler-plugin.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
+        <quarkus.platform.version>3.6.0</quarkus.platform.version>
+        <skipITs>true</skipITs>
+        <surefire-plugin.version>3.0.0-M9</surefire-plugin.version>
+    </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-panache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-reactive-messaging-kafka</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${compiler-plugin.version}</version>
+                <configuration>
+                    <compilerArgs>
+                        <arg>-parameters</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${surefire-plugin.version}</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                        <maven.home>${maven.home}</maven.home>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
+
+
+2. src/main/resources/application.properties
+# === HTTP ===
+quarkus.http.port=8081
+
+# === DATABASE ===
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.username=brahma
+quarkus.datasource.password=brahma123
+quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/brahma
+
+# === HIBERNATE ORM ===
+quarkus.hibernate-orm.database.generation=update
+quarkus.hibernate-orm.default-schema=processor
+quarkus.hibernate-orm.log.sql=true
+quarkus.hibernate-orm.log.bind-params=true
+
+# === FLYWAY (for schema migrations) ===
+quarkus.flyway.migrate-at-start=true
+quarkus.flyway.schemas=processor
+
+# === KAFKA ===
+quarkus.kafka.bootstrap-servers=localhost:9092
+quarkus.kafka.devservices.enabled=false
+
+# === REACTIVE MESSAGING (Consumer) ===
+mp.messaging.incoming.registration-in.connector=smallrye-kafka
+mp.messaging.incoming.registration-in.topic=terminal.registration
+mp.messaging.incoming.registration-in.value.deserializer=io.quarkus.kafka.client.serialization.ObjectMapperDeserializer
+mp.messaging.incoming.registration-in.value.type=com.example.processor.TerminalRegistrationMessage
+# Auto-commit after processing
+mp.messaging.incoming.registration-in.auto.offset.reset=earliest
+
+# === REACTIVE MESSAGING (Producer) ===
+mp.messaging.outgoing.registered-out.connector=smallrye-kafka
+mp.messaging.outgoing.registered-out.topic=terminal.registered
+mp.messaging.outgoing.registered-out.value.serializer=io.quarkus.kafka.client.serialization.ObjectMapperSerializer
+
+# === HEALTH ===
+quarkus.smallrye-health.root-path=/q/health
+
+3. src/main/resources/db/migration/V1__Create_terminals_table.sql
+CREATE SCHEMA IF NOT EXISTS processor;
+
+CREATE TABLE processor.terminals (
+    id VARCHAR(255) PRIMARY KEY,
+    data JSONB NOT NULL,
+    status VARCHAR(50) NOT NULL DEFAULT 'PENDING',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+4. src/main/java/com/example/processor/TerminalRegistrationMessage.java
+package com.example.processor;
+
+/**
+ * DTO для получения из Kafka топика 'terminal.registration'.
+ */
+public class TerminalRegistrationMessage {
+    public String id;
+    public String dataJson; // JSON-строка
+
+    public TerminalRegistrationMessage() {}
+
+    public TerminalRegistrationMessage(String id, String dataJson) {
+        this.id = id;
+        this.dataJson = dataJson;
+    }
+
+    // Getters & Setters (GigaIDE: Alt+Insert → Generate)
+}
+
+5. src/main/java/com/example/processor/TerminalRegisteredMessage.java
+package com.example.processor;
+
+/**
+ * DTO для отправки в Kafka топик 'terminal.registered'.
+ */
+public class TerminalRegisteredMessage {
+    public String id;
+    public String status; // "REGISTERED", "FAILED", etc.
+
+    public TerminalRegisteredMessage() {}
+
+    public TerminalRegisteredMessage(String id, String status) {
+        this.id = id;
+        this.status = status;
+    }
+
+    // Getters & Setters
+}
+
+6. src/main/java/com/example/processor/Terminal.java
+package com.example.processor;
+
+import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
+
+@Entity
+@Table(schema = "processor", name = "terminals")
+public class Terminal extends PanacheEntityBase {
+
+    @Id
+    public String id;
+
+    @Column(columnDefinition = "jsonb", nullable = false)
+    public String data; // JSONB строка
+
+    @Column(nullable = false)
+    public String status = "PENDING";
+
+    @Column(name = "created_at")
+    public LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    public LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+}
+
+7. src/main/java/com/example/processor/TerminalRegistrationConsumer.java
+package com.example.processor;
+
+import io.smallrye.mutiny.Uni;
+import org.eclipse.microprofile.reactive.messaging.Incoming;
+import org.eclipse.microprofile.reactive.messaging.Outgoing;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+@ApplicationScoped
+public class TerminalRegistrationConsumer {
+
+    @Inject
+    TerminalRegisteredProducer kafkaProducer;
+
+    @Incoming("registration-in") // ← имя канала из application.properties
+    @Outgoing("registered-out") // ← имя канала для отправки (опционально, можно отправить вручную)
+    @Transactional
+    public Uni<Void> processRegistration(TerminalRegistrationMessage message) {
+        String id = message.id;
+        String dataJson = message.dataJson;
+
+        System.out.println("📥 Kafka: received registration for " + id);
+
+        // Проверим, есть ли уже такой терминал
+        Terminal existing = Terminal.findById(id);
+
+        if (existing != null) {
+            // Обновим статус
+            existing.status = "REGISTERED";
+            existing.data = dataJson;
+            existing.persist();
+        } else {
+            // Создадим новый
+            Terminal terminal = new Terminal();
+            terminal.id = id;
+            terminal.data = dataJson;
+            terminal.status = "REGISTERED";
+            terminal.persist();
+        }
+
+        // Отправим подтверждение в Kafka
+        kafkaProducer.send(id, "REGISTERED");
+
+        System.out.println("✅ DB: terminal " + id + " updated to REGISTERED");
+        System.out.println("📤 Kafka: sent confirmation for " + id);
+
+        return Uni.createFrom().voidItem();
+    }
+}
+
+8. src/main/java/com/example/processor/TerminalRegisteredProducer.java
+package com.example.processor;
+
+import org.eclipse.microprofile.reactive.messaging.Emitter;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+public class TerminalRegisteredProducer {
+
+    @Inject
+    @Channel("registered-out") // ← имя канала из application.properties
+    Emitter<TerminalRegisteredMessage> emitter;
+
+    public void send(String id, String status) {
+        emitter.send(new TerminalRegisteredMessage(id, status));
+    }
+}
+
+9. src/main/java/com/example/processor/ProcessorResource.java (для /health)
+package com.example.processor;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path("/health")
+public class ProcessorResource {
+
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String health() {
+        return "OK";
+    }
+}
+
+----------
+psql -h localhost -U brahma -d brahma -c "CREATE SCHEMA IF NOT EXISTS processor;"
+
+cd ~/brahma/brahma-processor
+mvn quarkus:dev
+
