@@ -7,7 +7,7 @@ mvn io.quarkus.platform:quarkus-maven-plugin:3.6.0:create \
   -DprojectArtifactId=brahma-processor \
   -DclassName="com.example.processor.ProcessorResource" \
   -Dpath="/health" \
-  -Dextensions="resteasy-reactive,smallrye-reactive-messaging-kafka,jdbc-postgresql,hibernate-orm-panache"
+  -Dextensions="resteasy-reactive,quarkus-smallrye-reactive-messaging-kafka,jdbc-postgresql,hibernate-orm-panache"
 
 Структура файлов:
 ~/brahma/brahma-processor/
@@ -265,9 +265,8 @@ public class TerminalRegistrationConsumer {
     TerminalRegisteredProducer kafkaProducer;
 
     @Incoming("registration-in") // ← имя канала из application.properties
-    @Outgoing("registered-out") // ← имя канала для отправки (опционально, можно отправить вручную)
     @Transactional
-    public Uni<Void> processRegistration(TerminalRegistrationMessage message) {
+    public void processRegistration(TerminalRegistrationMessage message) { // ← void, не Uni<Void>
         String id = message.id;
         String dataJson = message.dataJson;
 
@@ -295,8 +294,6 @@ public class TerminalRegistrationConsumer {
 
         System.out.println("✅ DB: terminal " + id + " updated to REGISTERED");
         System.out.println("📤 Kafka: sent confirmation for " + id);
-
-        return Uni.createFrom().voidItem();
     }
 }
 
