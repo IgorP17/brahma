@@ -76,4 +76,4 @@ mvn quarkus:dev
 # Пример запроса:
 curl -X POST http://localhost:8080/api/register \
   -H "Content-Type: application/json" \
-  -d '{"id":"TERM-00014","data":{"model":"ABC","location":"Moscow"}}'
+  -d '{"id":"TERM-00015","data":{"model":"ABC","location":"Moscow"}}'

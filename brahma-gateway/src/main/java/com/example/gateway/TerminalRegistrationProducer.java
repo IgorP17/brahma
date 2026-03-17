@@ -14,6 +14,5 @@ public class TerminalRegistrationProducer {
 
     public void send(String id, String dataJson) {
         emitter.send(new KafkaTerminalMessage(id, dataJson));
-        System.out.println("📤 Kafka: sent registration for " + id);
     }
 }
