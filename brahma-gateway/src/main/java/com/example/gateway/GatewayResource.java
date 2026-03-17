@@ -35,6 +35,9 @@ public class GatewayResource {
         Map<String, Object> data = registration.data;
         String status = "NOT_REGISTERED";
 
+        // 🔥 Добавь логирование приёма запроса
+        System.out.println("🌐 HTTP: received registration request for " + id);
+
         String dataJson;
         try {
             dataJson = mapper.writeValueAsString(data);
