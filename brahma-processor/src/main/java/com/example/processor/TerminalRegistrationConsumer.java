@@ -3,7 +3,6 @@ package com.example.processor;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,18 +16,23 @@ public class TerminalRegistrationConsumer {
     TerminalRegisteredProducer kafkaProducer;
 
     @Inject
-    DataSource dataSource; // 🔑 Добавь инъекцию DataSource
+    DataSource dataSource;
 
     @Incoming("registration-in")
     public void processRegistration(TerminalRegistrationMessage message) {
         String id = message.id;
         String dataJson = message.dataJson;
 
-        System.out.println("📥 Kafka: received registration for " + id);
+        // 🔥 ЛОГ ПРИЁМА ИЗ KAFKA — как HTTP REQUEST
+        System.out.println("📥 KAFKA IN MESSAGE:");
+        System.out.println("   Topic: terminal.registration");
+        System.out.println("   Term ID: " + id);
+        System.out.println("   Data JSON: " + dataJson);
+        System.out.println("   Headers: (none)");
+        System.out.println("   ------------------------");
 
-        // --- Выполняем JDBC вручную с транзакцией ---
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(false); // начинаем транзакцию
+            conn.setAutoCommit(false);
 
             String sql = """
                 INSERT INTO processor.terminals (id, data, status, created_at, updated_at)
@@ -42,29 +46,32 @@ public class TerminalRegistrationConsumer {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, id);
                 ps.setString(2, dataJson);
-                ps.setString(3, "REGISTERED"); // статус
+                ps.setString(3, "REGISTERED");
                 ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
                 ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
 
                 ps.executeUpdate();
-                conn.commit(); // коммитим БД-транзакцию
+                conn.commit();
             } catch (Exception e) {
                 conn.rollback();
                 throw e;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.err.println("❌ DB: failed to save terminal " + id + ", error: " + e.getMessage());
-            return; // Не отправляем подтверждение, если БД упала
+            System.err.println("❌ DB update failed for " + id + ": " + e.getMessage());
+            return;
         }
 
-        // 📤 Теперь, ПОСЛЕ коммита БД, отправляем в Kafka
         System.out.println("✅ DB: terminal " + id + " updated to REGISTERED");
-        try {
-            kafkaProducer.send(id, "REGISTERED");
-            System.out.println("📤 Kafka: sent confirmation for " + id);
-        } catch (Exception e) {
-            System.err.println("❌ Kafka send failed: " + e.getMessage());
-        }
+
+        // 🔥 ЛОГ ОТПРАВКИ В KAFKA — как KAFKA OUT
+        System.out.println("📤 KAFKA OUT MESSAGE:");
+        System.out.println("   Topic: terminal.registered");
+        System.out.println("   Term ID: " + id);
+        System.out.println("   Status: REGISTERED");
+        System.out.println("   Headers: (none)");
+        System.out.println("   ------------------------");
+
+        kafkaProducer.send(id, "REGISTERED");
     }
 }
