@@ -1,8 +1,8 @@
 package com.example.gateway;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -17,6 +17,7 @@ import java.util.Map;
 @Path("/api")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@ApplicationScoped
 public class GatewayResource {
 
     @Inject
@@ -25,7 +26,6 @@ public class GatewayResource {
     @Inject
     TerminalRegistrationProducer kafkaProducer;
 
-    // 🔑 Правильный способ создать ObjectMapper (не newInstance!)
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @POST
@@ -35,7 +35,6 @@ public class GatewayResource {
         Map<String, Object> data = registration.data;
         String status = "NOT_REGISTERED";
 
-        // 🔥 Добавь логирование приёма запроса
         System.out.println("🌐 HTTP: received registration request for " + id);
 
         String dataJson;
@@ -45,9 +44,8 @@ public class GatewayResource {
             return Response.status(500).entity("{\"error\":\"JSON serialize failed\"}").build();
         }
 
-        // --- Выполняем JDBC вручную с транзакцией ---
         try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(false); // начинаем транзакцию
+            conn.setAutoCommit(false);
 
             String sql = """
             INSERT INTO gateway.terminals (id, data, status, created_at, updated_at)
@@ -66,7 +64,7 @@ public class GatewayResource {
                 ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
 
                 ps.executeUpdate();
-                conn.commit(); // коммитим БД-транзакцию
+                conn.commit();
             } catch (Exception e) {
                 conn.rollback();
                 throw e;
@@ -76,20 +74,18 @@ public class GatewayResource {
             return Response.status(500).entity("{\"error\":\"DB\"}").build();
         }
 
-        // 📤 Теперь, ПОСЛЕ коммита БД, отправляем в Kafka
         System.out.println("🐛 DEBUG: Sending to Kafka AFTER DB commit...");
         try {
             kafkaProducer.send(id, dataJson);
             System.out.println("📤 Kafka: sent registration for " + id);
         } catch (Exception e) {
             System.err.println("❌ Kafka send failed: " + e.getMessage());
-            // Не ломаем ответ — терминал уже сохранён
         }
 
         return Response.ok()
                 .entity("{\"status\":\"pending\",\"id\":\"" + id + "\"}")
                 .build();
-        }
+    }
 
     @GET
     @Path("/health")

@@ -9,11 +9,10 @@ import jakarta.inject.Inject;
 public class TerminalRegistrationProducer {
 
     @Inject
-    @Channel("registration-out") // имя канала — совпадает с application.properties
+    @Channel("registration-out")
     Emitter<KafkaTerminalMessage> emitter;
 
     public void send(String id, String dataJson) {
-        // 🔥 Обновлённый формат лога — как HTTP REQUEST
         System.out.println("📤 KAFKA OUT MESSAGE:");
         System.out.println("   Topic: terminal.registration");
         System.out.println("   Term ID: " + id);
