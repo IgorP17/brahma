@@ -24,7 +24,7 @@
     - Отправляет подтверждение в топик `terminal.registered`
 - **Технологии:** Kafka Consumer, Hibernate ORM
 
-### 3. `brahma-dashboard` (App 3)
+### 3. `brahma-webui` (App 3)
 - **Роль:** Веб-интерфейс для мониторинга.
 - **Функции:**
     - Показывает список терминалов из обеих БД (`gateway.terminals`, `processor.terminals`)

@@ -13,6 +13,7 @@
     <modules>
         <module>brahma-gateway</module>
         <module>brahma-processor</module>
+        <module>brahma-webui</module>
     </modules>
 
     <properties>

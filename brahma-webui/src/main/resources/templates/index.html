@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brahma WebUI</title>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        form { margin-top: 20px; padding: 20px; border: 1px solid #ccc; }
+        input[type=text], input[type=submit] { margin: 5px; padding: 8px; }
+        table { width: 100%; font-family: Arial, sans-serif; }
+        th, td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #4CAF50; color: white; }
+    </style>
+</head>
+<body>
+<h1>{message}</h1>
+<p>Register a new terminal:</p>
+<form action="/register" method="post">
+    <input type="text" name="id" placeholder="Terminal ID (e.g., TERM-00001)" required><br>
+    <input type="text" name="model" placeholder="Model (e.g., ABC)" required><br>
+    <input type="text" name="location" placeholder="Location (e.g., Moscow)" required><br>
+    <input type="submit" value="Register Terminal">
+</form>
+
+<!-- Поле ввода и кнопка поиска -->
+<div style="margin-top: 30px;">
+    <label for="search-id">Search Terminal by ID:</label>
+    <input type="text" id="search-id" placeholder="Enter Terminal ID...">
+    <button onclick="searchTerminal()">Search</button>
+</div>
+
+<h2>Registered Terminals in gateway.terminals</h2>
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+    <thead>
+    <tr style="background-color: #f2f2f2;">
+        <th>ID</th>
+        <th>Model</th>
+        <th>Location</th>
+        <th>Status</th>
+        <th>Created At</th>
+        <th>Updated At</th>
+    </tr>
+    </thead>
+    <tbody id="gateway-terminals-table">
+    {#for t in terminals}
+    <tr>
+        <td>{t.id}</td>
+        <td>{t.model}</td>
+        <td>{t.location}</td>
+        <td>{t.status}</td>
+        <td>{t.createdAt}</td>
+        <td>{t.updatedAt}</td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+
+<script>
+    function searchTerminal() {
+        const id = document.getElementById('search-id').value.trim();
+        if (!id) {
+            alert('Please enter a Terminal ID');
+            return;
+        }
+
+        fetch('/terminal/' + id)
+            .then(res => {
+                if (res.ok) {
+                    return res.json();
+                } else if (res.status === 404) {
+                    alert('Terminal not found');
+                    return null;
+                } else {
+                    throw new Error('Network response was not ok');
+                }
+            })
+            .then(data => {
+                if (data) {
+                    const tbody = document.getElementById('gateway-terminals-table');
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        const row = document.createElement('tr');
+                        row.innerHTML = '<td>' + data.id + '</td>' +
+                                        '<td>' + data.model + '</td>' +
+                                        '<td>' + data.location + '</td>' +
+                                        '<td>' + data.status + '</td>' +
+                                        '<td>' + data.createdAt + '</td>' +
+                                        '<td>' + data.updatedAt + '</td>';
+                        tbody.appendChild(row);
+                    }
+                }
+            })
+            .catch(err => console.error('Error:', err));
+    }
+</script>
+
+</body>
+</html>
