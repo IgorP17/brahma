@@ -29,10 +29,9 @@ public class TerminalWebResource {
     @GET
     @Produces(MediaType.TEXT_HTML)
     public String getIndex() {
-        var terminals = terminalService.getAllTerminals();
         return index
                 .data("message", "Welcome to Brahma WebUI!")
-                .data("terminals", terminals)
+                .data("terminals", java.util.Collections.emptyList())  // ← пустой список
                 .render();
     }
 
