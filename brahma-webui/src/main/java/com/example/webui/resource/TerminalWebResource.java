@@ -46,12 +46,14 @@ public class TerminalWebResource {
     @Path("/terminal/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getTerminalById(@PathParam("id") String id) {
-        var terminal = terminalService.findTerminalById(id);
-        if (terminal != null) {
-            return Response.ok(terminal).build();
-        } else {
-            return Response.status(Response.Status.NOT_FOUND).build();
-        }
+        var gatewayTerm = terminalService.findTerminalById(id);
+        var processorTerm = terminalService.findProcessorTerminalById(id);
+
+        var result = new java.util.HashMap<String, Object>();
+        result.put("gateway", gatewayTerm);
+        result.put("processor", processorTerm);
+
+        return Response.ok(result).build();
     }
 
     @POST

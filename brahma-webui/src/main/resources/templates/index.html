@@ -55,12 +55,38 @@
     </tbody>
 </table>
 
+<h2>Registered Terminals in processor.terminals</h2>
+<table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+    <thead>
+    <tr style="background-color: #f2f2f2;">
+        <th>ID</th>
+        <th>Model</th>
+        <th>Location</th>
+        <th>Status</th>
+        <th>Created At</th>
+        <th>Updated At</th>
+    </tr>
+    </thead>
+    <tbody id="processor-terminals-table">
+    {#for t in terminals}
+    <tr>
+        <td>{t.id}</td>
+        <td>{t.model}</td>
+        <td>{t.location}</td>
+        <td>{t.status}</td>
+        <td>{t.createdAt}</td>
+        <td>{t.updatedAt}</td>
+    </tr>
+    {/for}
+    </tbody>
+</table>
+
 <script>
     function searchTerminal() {
         const id = document.getElementById('search-id').value.trim();
         if (!id) {
             alert('Please enter a Terminal ID');
-            return;
+            return;rowP
         }
 
         fetch('/terminal/' + id)
@@ -75,24 +101,43 @@
                 }
             })
             .then(data => {
-                if (data) {
-                    const tbody = document.getElementById('gateway-terminals-table');
-                    if (tbody) {
-                        tbody.innerHTML = '';
-                        const row = document.createElement('tr');
-                        row.innerHTML = '<td>' + data.id + '</td>' +
-                                        '<td>' + data.model + '</td>' +
-                                        '<td>' + data.location + '</td>' +
-                                        '<td>' + data.status + '</td>' +
-                                        '<td>' + data.createdAt + '</td>' +
-                                        '<td>' + data.updatedAt + '</td>';
-                        tbody.appendChild(row);
-                    }
+                const tbodyGateway = document.getElementById('gateway-terminals-table');
+                const tbodyProcessor = document.getElementById('processor-terminals-table');
+
+                // Очистка обеих таблиц
+                tbodyGateway.innerHTML = '';
+                tbodyProcessor.innerHTML = '';
+
+                // Gateway
+                if (data.gateway) {
+                    const rowG = document.createElement('tr');
+                    rowG.innerHTML = '<td>' + data.gateway.id + '</td>' +
+                                     '<td>' + data.gateway.model + '</td>' +
+                                     '<td>' + data.gateway.location + '</td>' +
+                                     '<td>' + data.gateway.status + '</td>' +
+                                     '<td>' + data.gateway.createdAt + '</td>' +
+                                     '<td>' + data.gateway.updatedAt + '</td>';
+                    tbodyGateway.appendChild(rowG);
+                } else {
+                    tbodyGateway.innerHTML = '<tr><td colspan="6">Not found in gateway</td></tr>';
+                }
+
+                // Processor
+                if (data.processor) {
+                    const rowP = document.createElement('tr');
+                    rowP.innerHTML = '<td>' + data.processor.id + '</td>' +
+                                     '<td>' + data.processor.model + '</td>' +
+                                     '<td>' + data.processor.location + '</td>' +
+                                     '<td>' + data.processor.status + '</td>' +
+                                     '<td>' + data.processor.createdAt + '</td>' +
+                                     '<td>' + data.processor.updatedAt + '</td>';
+                    tbodyProcessor.appendChild(rowP);
+                } else {
+                    tbodyProcessor.innerHTML = '<tr><td colspan="4">Not found in processor</td></tr>';
                 }
             })
             .catch(err => console.error('Error:', err));
-    }
-</script>
+    }</script>
 
 </body>
 </html>
