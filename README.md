@@ -33,13 +33,19 @@
   - Пустая таблица при загрузке — данные подгружаются по запросу
 - **Технологии:** Quarkus Qute, REST Client, Hibernate ORM, JSON-колонки
 
+### 4. `brahma-common` (App 4)
+- **Роль:** Общие компоненты
+- **Функции:**
+  - Общий ENUM статусов терминалов
+
 ---
 
 ## 📊 Базы данных
 
-- **PostgreSQL** — используется двумя сервисами:
+- **PostgreSQL** — используется сервисами:
     - `brahma-gateway` → схема `gateway.terminals`
     - `brahma-processor` → схема `processor.terminals`
+    - `brahma-webui` → чтение из обоих схем данных
 
 ### Структура таблиц:
 

@@ -1,5 +1,8 @@
 package com.example.gateway;
 
+import jakarta.transaction.Transactional;
+import com.example.common.TerminalStatus;
+import com.example.gateway.entity.GatewayTerminal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -7,10 +10,6 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -21,57 +20,43 @@ import java.util.Map;
 public class GatewayResource {
 
     @Inject
-    DataSource dataSource;
-
-    @Inject
     TerminalRegistrationProducer kafkaProducer;
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
     @POST
     @Path("/register")
+    @Transactional
     public Response registerTerminal(TerminalRegistration registration) {
         String id = registration.id;
         Map<String, Object> data = registration.data;
-        String status = "NOT_REGISTERED";
+        TerminalStatus status = TerminalStatus.IN_PROCESS;
 
         System.out.println("🌐 HTTP: received registration request for " + id);
 
+        // Проверим, есть ли терминал
+        GatewayTerminal terminal = GatewayTerminal.findById(id);
+        if (terminal == null) {
+            terminal = new GatewayTerminal();
+            terminal.id = id;
+            terminal.data = data;
+            terminal.status = status;
+            terminal.createdAt = LocalDateTime.now();
+            terminal.updatedAt = null;  // 🔥 NULL при создании
+            terminal.persist();
+        } else {
+            terminal.data = data;
+            terminal.status = status;
+            terminal.updatedAt = null;  // 🔥 Сброс при обновлении через HTTP
+            terminal.persist();
+        }
+
+        // Отправить в Kafka
         String dataJson;
         try {
             dataJson = mapper.writeValueAsString(data);
         } catch (Exception e) {
             return Response.status(500).entity("{\"error\":\"JSON serialize failed\"}").build();
-        }
-
-        try (Connection conn = dataSource.getConnection()) {
-            conn.setAutoCommit(false);
-
-            String sql = """
-            INSERT INTO gateway.terminals (id, data, status, created_at, updated_at)
-            VALUES (?, ?::jsonb, ?, ?, ?)
-            ON CONFLICT (id) DO UPDATE SET
-                data = EXCLUDED.data::jsonb,
-                status = EXCLUDED.status,
-                updated_at = CURRENT_TIMESTAMP
-            """;
-
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, id);
-                ps.setString(2, dataJson);
-                ps.setString(3, status);
-                ps.setTimestamp(4, Timestamp.valueOf(LocalDateTime.now()));
-                ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));
-
-                ps.executeUpdate();
-                conn.commit();
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Response.status(500).entity("{\"error\":\"DB\"}").build();
         }
 
         System.out.println("🐛 DEBUG: Sending to Kafka AFTER DB commit...");

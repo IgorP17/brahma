@@ -14,6 +14,7 @@
         <module>brahma-gateway</module>
         <module>brahma-processor</module>
         <module>brahma-webui</module>
+        <module>brahma-common</module>
     </modules>
 
     <properties>
