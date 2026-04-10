@@ -57,30 +57,6 @@ public class TerminalWebResource {
     }
 
     @POST
-    @Path("/register")
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response registerTerminal(@FormParam("id") String id,
-                                     @FormParam("model") String model,
-                                     @FormParam("location") String location) {
-        // Собираем JSON-объект
-        var request = new com.example.webui.client.TerminalRegistrationRequest();
-        request.id = id;
-        request.data = java.util.Map.of("model", model, "location", location);
-
-        try {
-            var response = gatewayClient.registerTerminal(request);
-            if (response.getStatus() == 200) {
-                return Response.ok("Terminal " + id + " registered successfully!").build();
-            } else {
-                return Response.status(response.getStatus()).entity("Error registering terminal").build();
-            }
-        } catch (Exception e) {
-            return Response.status(500).entity("Internal error: " + e.getMessage()).build();
-        }
-    }
-
-    @POST
     @Path("/regterminal")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_PLAIN)
