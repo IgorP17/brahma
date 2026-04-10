@@ -22,7 +22,7 @@
             margin: 5px 0;
         }
         input[type=submit] {
-            margin: 10px 0 0;search
+            margin: 10px 0 0;
             padding: 8px 16px;
             background-color: #4CAF50;
             color: white;
@@ -53,13 +53,29 @@
         button:hover {
             background-color: #0056b3;
         }
+        #register-result {
+            margin-top: 10px;
+            padding: 8px;
+            font-weight: bold;
+            display: none;
+        }
+        #register-result.success {
+            color: green;
+            background-color: #e6f3e6;
+            border: 1px solid #a3d9a3;
+        }
+        #register-result.error {
+            color: red;
+            background-color: #ffe6e6;
+            border: 1px solid #ffcccc;
+        }
     </style>
 </head>
 <body>
 <h1>Welcome to Brahma WebUI!</h1>
 
 <p>Register a new terminal:</p>
-<form action="/register" method="post">
+<form id="register-form">
     <div class="form-group">
         <label for="id">Terminal ID:</label>
         <input type="text" id="id" name="id" placeholder="e.g., TERM-00001" required>
@@ -77,6 +93,9 @@
 
     <input type="submit" value="Register Terminal">
 </form>
+
+<!-- Место для результата регистрации -->
+<div id="register-result"></div>
 
 <!-- Поиск -->
 <div id="search-section">
@@ -138,62 +157,100 @@
 </table>
 
 <script>
-    function searchTerminal() {
-        const id = document.getElementById('search-id').value.trim();
-        if (!id) {
-            alert('Please enter a Terminal ID');
-            return;
+    document.getElementById('register-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const params = new URLSearchParams();
+        params.append('id', formData.get('id'));
+        params.append('model', formData.get('model'));
+        params.append('location', formData.get('location'));
+
+        const resultDiv = document.getElementById('register-result');
+        resultDiv.style.display = 'block';
+        resultDiv.textContent = 'Sending...';
+        resultDiv.className = 'success';
+
+        try {
+            const response = await fetch('/regterminal', {  // ← на правильный эндпоинт!
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: params.toString()
+            });
+
+            const text = await response.text();
+
+            if (response.ok && text.includes('successfully')) {
+                resultDiv.textContent = '✅ ' + text.trim();
+                resultDiv.className = 'success';
+            } else {
+                resultDiv.textContent = '❌ Registration failed: ' + (text || 'Unknown error');
+                resultDiv.className = 'error';
+            }
+        } catch (err) {
+            resultDiv.textContent = '❌ Network error: ' + err.message;
+            resultDiv.className = 'error';
         }
+    });
 
-        fetch('/terminal/' + id)
-            .then(res => {
-                if (res.ok) {
-                    return res.json();
-                } else if (res.status === 404) {
-                    alert('Terminal not found');
-                    return null;
-                } else {
-                    throw new Error('Network response was not ok');
-                }
-            })
-            .then(data => {
-                const tbodyGateway = document.getElementById('gateway-terminals-table');
-                const tbodyProcessor = document.getElementById('processor-terminals-table');
+        function searchTerminal() {
+            const id = document.getElementById('search-id').value.trim();
+            if (!id) {
+                alert('Please enter a Terminal ID');
+                return;
+            }
 
-                // Очистка обеих таблиц
-                tbodyGateway.innerHTML = '';
-                tbodyProcessor.innerHTML = '';
+            fetch('/terminal/' + id)
+                .then(res => {
+                    if (res.ok) {
+                        return res.json();
+                    } else if (res.status === 404) {
+                        alert('Terminal not found');
+                        return null;
+                    } else {
+                        throw new Error('Network response was not ok');
+                    }
+                })
+                .then(data => {
+                    const tbodyGateway = document.getElementById('gateway-terminals-table');
+                    const tbodyProcessor = document.getElementById('processor-terminals-table');
 
-                // Gateway
-                if (data.gateway) {
-                    const rowG = document.createElement('tr');
-                    rowG.innerHTML = '<td>' + data.gateway.id + '</td>' +
-                                     '<td>' + data.gateway.model + '</td>' +
-                                     '<td>' + data.gateway.location + '</td>' +
-                                     '<td>' + data.gateway.status + '</td>' +
-                                     '<td>' + data.gateway.createdAt + '</td>' +
-                                     '<td>' + data.gateway.updatedAt + '</td>';
-                    tbodyGateway.appendChild(rowG);
-                } else {
-                    tbodyGateway.innerHTML = '<tr><td colspan="6">Not found in gateway</td></tr>';
-                }
+                    // Очистка обеих таблиц
+                    tbodyGateway.innerHTML = '';
+                    tbodyProcessor.innerHTML = '';
 
-                // Processor
-                if (data.processor) {
-                    const rowP = document.createElement('tr');
-                    rowP.innerHTML = '<td>' + data.processor.id + '</td>' +
-                                     '<td>' + data.processor.model + '</td>' +
-                                     '<td>' + data.processor.location + '</td>' +
-                                     '<td>' + data.processor.status + '</td>' +
-                                     '<td>' + data.processor.createdAt + '</td>' +
-                                     '<td>' + data.processor.updatedAt + '</td>';
-                    tbodyProcessor.appendChild(rowP);
-                } else {
-                    tbodyProcessor.innerHTML = '<tr><td colspan="6">Not found in processor</td></tr>';
-                }
-            })
-            .catch(err => console.error('Error:', err));
-    }
+                    // Gateway
+                    if (data.gateway) {
+                        const rowG = document.createElement('tr');
+                        rowG.innerHTML = '<td>' + data.gateway.id + '</td>' +
+                                         '<td>' + data.gateway.model + '</td>' +
+                                         '<td>' + data.gateway.location + '</td>' +
+                                         '<td>' + data.gateway.status + '</td>' +
+                                         '<td>' + data.gateway.createdAt + '</td>' +
+                                         '<td>' + data.gateway.updatedAt + '</td>';
+                        tbodyGateway.appendChild(rowG);
+                    } else {
+                        tbodyGateway.innerHTML = '<tr><td colspan="6">Not found in gateway</td></tr>';
+                    }
+
+                    // Processor
+                    if (data.processor) {
+                        const rowP = document.createElement('tr');
+                        rowP.innerHTML = '<td>' + data.processor.id + '</td>' +
+                                         '<td>' + data.processor.model + '</td>' +
+                                         '<td>' + data.processor.location + '</td>' +
+                                         '<td>' + data.processor.status + '</td>' +
+                                         '<td>' + data.processor.createdAt + '</td>' +
+                                         '<td>' + data.processor.updatedAt + '</td>';
+                        tbodyProcessor.appendChild(rowP);
+                    } else {
+                        tbodyProcessor.innerHTML = '<tr><td colspan="6">Not found in processor</td></tr>';
+                    }
+                })
+                .catch(err => console.error('Error:', err));
+        }
 </script>
 </body>
 </html>
