@@ -11,8 +11,6 @@ import io.quarkus.qute.Template;
 import jakarta.enterprise.context.RequestScoped;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import java.util.List;
-
 @Path("/")
 @RequestScoped
 public class TerminalWebResource {
@@ -33,13 +31,6 @@ public class TerminalWebResource {
                 .data("message", "Welcome to Brahma WebUI!")
                 .data("terminals", java.util.Collections.emptyList())  // ← пустой список
                 .render();
-    }
-
-    @GET
-    @Path("/terminals")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<TerminalViewGateway> getTerminals() {
-        return terminalService.getAllTerminals();
     }
 
     @GET
