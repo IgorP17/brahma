@@ -5,6 +5,7 @@ import com.example.webui.entity.ProcessorTerminal;
 import com.example.webui.model.TerminalViewGateway;
 import com.example.webui.model.TerminalViewProcessor;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 
 @ApplicationScoped
 public class TerminalService {
@@ -49,5 +50,21 @@ public class TerminalService {
             view.updatedAt = t.updatedAt != null ? t.updatedAt.toString() : "";
         }
         return view;
+    }
+
+    @Transactional
+    public void deleteTerminalFromGateway(String id) {
+        GatewayTerminal.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteTerminalFromProcessor(String id) {
+        ProcessorTerminal.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteTerminalFromBoth(String id) {
+        deleteTerminalFromGateway(id);
+        deleteTerminalFromProcessor(id);
     }
 }

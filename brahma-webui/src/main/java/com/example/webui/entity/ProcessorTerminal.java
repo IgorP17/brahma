@@ -32,4 +32,9 @@ public class ProcessorTerminal extends PanacheEntityBase {
     public String getLocation() {
         return (String) data.get("location");
     }
+
+    public static void deleteById(String id) {
+        if (id == null) return;
+        ProcessorTerminal.delete("id", id);
+    }
 }

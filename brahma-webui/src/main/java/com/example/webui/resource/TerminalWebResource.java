@@ -70,4 +70,30 @@ public class TerminalWebResource {
             return Response.status(500).entity("Internal error: " + e.getMessage()).build();
         }
     }
+
+    // === Удаление терминала ===
+
+    @DELETE
+    @Path("/terminal/{id}")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response deleteTerminalFromBoth(@PathParam("id") String id) {
+        terminalService.deleteTerminalFromBoth(id);
+        return Response.ok("Deleted from both").build();
+    }
+
+    @DELETE
+    @Path("/terminal/{id}/gateway")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response deleteTerminalFromGateway(@PathParam("id") String id) {
+        terminalService.deleteTerminalFromGateway(id);
+        return Response.ok("Deleted from gateway").build();
+    }
+
+    @DELETE
+    @Path("/terminal/{id}/processor")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response deleteTerminalFromProcessor(@PathParam("id") String id) {
+        terminalService.deleteTerminalFromProcessor(id);
+        return Response.ok("Deleted from processor").build();
+    }
 }

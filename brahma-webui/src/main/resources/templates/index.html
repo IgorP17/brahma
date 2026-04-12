@@ -69,6 +69,41 @@
             background-color: #ffe6e6;
             border: 1px solid #ffcccc;
         }
+        /* Стили для удаления */
+        #delete-section {
+            margin-top: 40px;
+        }
+        .delete-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .delete-btn {
+            padding: 6px 12px;
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .delete-btn:hover {
+            background-color: #c9302c;
+        }
+        #delete-result {
+            margin-top: 10px;
+            padding: 8px;
+            font-weight: bold;
+            display: none;
+        }
+        #delete-result.success {
+            color: green;
+            background-color: #e6f3e6;
+            border: 1px solid #a3d9a3;
+        }
+        #delete-result.error {
+            color: red;
+            background-color: #ffe6e6;
+            border: 1px solid #ffcccc;
+        }
     </style>
 </head>
 <body>
@@ -96,6 +131,21 @@
 
 <!-- Место для результата регистрации -->
 <div id="register-result"></div>
+
+<!-- Удаление -->
+<div id="delete-section">
+    <h2>Delete Terminal</h2>
+    <div class="form-group">
+        <label for="delete-id">Terminal ID to delete:</label>
+        <input type="text" id="delete-id" name="delete-id" placeholder="e.g., TERM-00001" required>
+    </div>
+    <div class="delete-buttons">
+        <button class="delete-btn" onclick="deleteTerminal('both')">Delete from gateway & processor</button>
+        <button class="delete-btn" onclick="deleteTerminal('processor')">Delete from processor</button>
+        <button class="delete-btn" onclick="deleteTerminal('gateway')">Delete from gateway</button>
+    </div>
+    <div id="delete-result"></div>
+</div>
 
 <!-- Поиск -->
 <div id="search-section">
@@ -251,6 +301,48 @@
                 })
                 .catch(err => console.error('Error:', err));
         }
+
+        const resultDiv = document.getElementById('delete-result');
+        resultDiv.style.display = 'block';
+        resultDiv.textContent = 'Deleting...';
+        resultDiv.className = 'success';
+
+        let endpoint;
+        switch(scope) {
+            case 'gateway':
+                endpoint = '/terminal/' + encodeURIComponent(id) + '/gateway';
+                break;
+            case 'processor':
+                endpoint = '/terminal/' + encodeURIComponent(id) + '/processor';
+                break;
+            case 'both':
+                endpoint = '/terminal/' + encodeURIComponent(id);
+                break;
+            default:
+                resultDiv.textContent = '❌ Invalid scope';
+                resultDiv.className = 'error';
+                return;
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'DELETE'
+            });
+
+            const text = await response.text();
+
+            if (response.ok) {
+                resultDiv.textContent = '✅ Terminal ' + id + ' deleted from ' + scope;
+                resultDiv.className = 'success';
+            } else {
+                resultDiv.textContent = '❌ Delete failed: ' + response.status + ' ' + (text || 'Unknown error');
+                resultDiv.className = 'error';
+            }
+        } catch (err) {
+            resultDiv.textContent = '❌ Network error: ' + err.message;
+            resultDiv.className = 'error';
+        }
+    }
 </script>
 </body>
 </html>
