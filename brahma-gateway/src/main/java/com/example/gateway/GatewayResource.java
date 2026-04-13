@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -18,6 +19,8 @@ import java.util.Map;
 @Consumes(MediaType.APPLICATION_JSON)
 @ApplicationScoped
 public class GatewayResource {
+
+    private static final Logger log = Logger.getLogger(GatewayResource.class);
 
     @Inject
     TerminalRegistrationProducer kafkaProducer;
@@ -32,7 +35,7 @@ public class GatewayResource {
         Map<String, Object> data = registration.data;
         TerminalStatus status = TerminalStatus.IN_PROCESS;
 
-        System.out.println("🌐 HTTP: received registration request for " + id);
+        log.info("🌐 HTTP: received registration request for " + id);
 
         // Проверим, есть ли терминал
         GatewayTerminal terminal = GatewayTerminal.findById(id);
@@ -59,12 +62,12 @@ public class GatewayResource {
             return Response.status(500).entity("{\"error\":\"JSON serialize failed\"}").build();
         }
 
-        System.out.println("🐛 DEBUG: Sending to Kafka AFTER DB commit...");
+        log.info("🐛 Sending to Kafka AFTER DB commit...");
         try {
             kafkaProducer.send(id, dataJson);
-            System.out.println("📤 Kafka: sent registration for " + id);
+            log.info("📤 Kafka: sent registration for " + id);
         } catch (Exception e) {
-            System.err.println("❌ Kafka send failed: " + e.getMessage());
+            log.error("❌ Kafka send failed: " + e.getMessage());
         }
 
         return Response.ok()

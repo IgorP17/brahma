@@ -6,12 +6,13 @@ import jakarta.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class TerminalRegisteredConsumer {
+
+    private static final Logger log = Logger.getLogger(TerminalRegisteredConsumer.class);
 
     @Inject
     DataSource dataSource;
@@ -24,14 +25,14 @@ public class TerminalRegisteredConsumer {
         try {
             msg = mapper.readValue(jsonString, TerminalRegisteredMessage.class);
         } catch (Exception e) {
-            System.err.println("❌ Cannot deserialize message: " + jsonString);
+            log.error("❌ Cannot deserialize message: " + jsonString);
             return;
         }
 
         String id = msg.id;
         String status = msg.status;
 
-        System.out.println("🔄 Kafka: received status update for " + id + " → " + status);
+        log.info("🔄 Kafka: received status update for " + id + " → " + status);
 
         try (Connection conn = dataSource.getConnection()) {
             conn.setAutoCommit(false);
@@ -46,15 +47,15 @@ public class TerminalRegisteredConsumer {
                 ps.setString(2, id);
                 int rows = ps.executeUpdate();
                 if (rows == 0) {
-                    System.out.println("ℹ️  Skip update: terminal not found: " + id);
+                    log.info("ℹ️  Skip update: terminal not found: " + id);
                 } else {
                     conn.commit();
-                    System.out.println("✅ DB: gateway.terminals." + id + " updated to " + status);
+                    log.info("✅ DB: gateway.terminals." + id + " updated to " + status);
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("❌ DB update failed for " + id);
+            log.error("❌ DB update failed for " + id);
+            log.error(e.getMessage());
         }
     }
 }
