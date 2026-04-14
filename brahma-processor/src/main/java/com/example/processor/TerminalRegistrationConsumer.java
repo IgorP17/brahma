@@ -4,6 +4,8 @@ import com.example.common.TerminalStatus;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
+
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -13,6 +15,8 @@ import java.time.LocalDateTime;
 
 @ApplicationScoped
 public class TerminalRegistrationConsumer {
+
+    private static final Logger log = Logger.getLogger(TerminalRegistrationConsumer.class);
 
     @Inject
     TerminalRegisteredProducer kafkaProducer;
@@ -25,12 +29,12 @@ public class TerminalRegistrationConsumer {
         String id = message.getId();
         String dataJson = message.getDataJson();
 
-        System.out.println("📥 KAFKA IN MESSAGE:");
-        System.out.println("   Topic: terminal.registration");
-        System.out.println("   Term ID: " + id);
-        System.out.println("   Data JSON: " + dataJson);
-        System.out.println("   Headers: (none)");
-        System.out.println("   ------------------------");
+        log.info("📥 KAFKA IN MESSAGE:");
+        log.info("   Topic: terminal.registration");
+        log.info("   Term ID: " + id);
+        log.info("   Data JSON: " + dataJson);
+        log.info("   Headers: (none)");
+        log.info("   ------------------------");
 
         String status;
 
@@ -90,20 +94,19 @@ public class TerminalRegistrationConsumer {
                 throw e;
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("❌ DB update failed for " + id + ": " + e.getMessage());
+            log.error("❌ DB update failed for " + id + ": " + e.getMessage(), e);
             return;
         }
 
-        System.out.println("✅ DB: terminal " + id + " updated to " + status);
+        log.info("✅ DB: terminal " + id + " updated to " + status);
 
         // Отправляем статус обратно в Kafka
-        System.out.println("📤 KAFKA OUT MESSAGE:");
-        System.out.println("   Topic: terminal.registered");
-        System.out.println("   Term ID: " + id);
-        System.out.println("   Status: " + status);
-        System.out.println("   Headers: (none)");
-        System.out.println("   ------------------------");
+        log.info("📤 KAFKA OUT MESSAGE:");
+        log.info("   Topic: terminal.registered");
+        log.info("   Term ID: " + id);
+        log.info("   Status: " + status);
+        log.info("   Headers: (none)");
+        log.info("   ------------------------");
 
         kafkaProducer.send(id, status);
     }
@@ -119,34 +122,34 @@ public class TerminalRegistrationConsumer {
 
     // Вспомогательный метод для извлечения location из JSON-строки
     private String extractLocationFromJson(String dataJson) {
-        System.out.println("🔍 Parsing JSON: " + dataJson);  // ← отладка
+        log.info("🔍 Parsing JSON: " + dataJson);  // ← отладка
 
         int locStart = dataJson.indexOf("\"location\"");
         if (locStart == -1) {
-            System.out.println("❌ 'location' key not found");
+            log.info("❌ 'location' key not found");
             return null;
         }
 
         int colon = dataJson.indexOf(":", locStart);
         if (colon == -1) {
-            System.out.println("❌ No ':' after 'location'");
+            log.info("❌ No ':' after 'location'");
             return null;
         }
 
         int quote1 = dataJson.indexOf("\"", colon);
         if (quote1 == -1) {
-            System.out.println("❌ No opening quote after ':'");
+            log.info("❌ No opening quote after ':'");
             return null;
         }
 
         int quote2 = dataJson.indexOf("\"", quote1 + 1);
         if (quote2 == -1) {
-            System.out.println("❌ No closing quote");
+            log.info("❌ No closing quote");
             return null;
         }
 
         String extracted = dataJson.substring(quote1 + 1, quote2);
-        System.out.println("✅ Extracted location: '" + extracted + "'");
+        log.info("✅ Extracted location: '" + extracted + "'");
 
         return extracted;
     }

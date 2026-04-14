@@ -67,7 +67,7 @@ public class GatewayResource {
             kafkaProducer.send(id, dataJson);
             log.info("📤 Kafka: sent registration for " + id);
         } catch (Exception e) {
-            log.error("❌ Kafka send failed: " + e.getMessage());
+            log.error("❌ Kafka send failed: " + e.getMessage(), e);
         }
 
         return Response.ok()

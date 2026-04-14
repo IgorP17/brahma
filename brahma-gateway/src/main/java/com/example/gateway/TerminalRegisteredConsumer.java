@@ -25,7 +25,7 @@ public class TerminalRegisteredConsumer {
         try {
             msg = mapper.readValue(jsonString, TerminalRegisteredMessage.class);
         } catch (Exception e) {
-            log.error("❌ Cannot deserialize message: " + jsonString);
+            log.error("❌ Cannot deserialize message: " + jsonString, e);
             return;
         }
 
@@ -54,8 +54,7 @@ public class TerminalRegisteredConsumer {
                 }
             }
         } catch (Exception e) {
-            log.error("❌ DB update failed for " + id);
-            log.error(e.getMessage());
+            log.error("❌ DB update failed for " + id + " " + e.getMessage(), e);
         }
     }
 }
