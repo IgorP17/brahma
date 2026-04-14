@@ -1,4 +1,4 @@
-package com.example.processor;
+package com.example.processor.resource;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;

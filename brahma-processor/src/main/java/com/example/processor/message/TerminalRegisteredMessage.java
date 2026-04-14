@@ -1,4 +1,4 @@
-package com.example.processor;
+package com.example.processor.message;
 
 /**
  * DTO для отправки в Kafka топик 'terminal.registered'.
