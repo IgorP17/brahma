@@ -1,4 +1,4 @@
-package com.example.gateway;
+package com.example.gateway.message;
 
 public class KafkaTerminalMessage {
     public String id;

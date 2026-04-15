@@ -1,4 +1,4 @@
-package com.example.gateway;
+package com.example.gateway.filter;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;

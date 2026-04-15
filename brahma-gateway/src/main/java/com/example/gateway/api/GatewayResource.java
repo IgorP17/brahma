@@ -1,5 +1,7 @@
-package com.example.gateway;
+package com.example.gateway.api;
 
+import com.example.gateway.dto.TerminalRegistration;
+import com.example.gateway.kafka.TerminalRegistrationProducer;
 import jakarta.transaction.Transactional;
 import com.example.common.TerminalStatus;
 import com.example.gateway.entity.GatewayTerminal;

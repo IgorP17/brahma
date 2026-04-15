@@ -1,5 +1,6 @@
-package com.example.gateway;
+package com.example.gateway.kafka;
 
+import com.example.gateway.message.TerminalRegisteredMessage;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

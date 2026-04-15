@@ -1,4 +1,4 @@
-package com.example.gateway;
+package com.example.gateway.dto;
 
 import java.util.Map;
 
