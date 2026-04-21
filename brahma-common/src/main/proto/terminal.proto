@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package com.example.terminal;
+
+option java_multiple_files = true;
+option java_package = "com.example.terminal.grpc";
+
+// Запрос на регистрацию терминала
+message RegisterTerminalRequest {
+  string id = 1;                    // ID терминала (например, "TERM-00021")
+  map<string, string> data = 2;     // Данные: {"model": "ABC", "location": "Moscow"}
+  string source = 3;                // Источник: "GRPC" или "KAFKA" (для логики)
+}
+
+// Ответ на регистрацию
+message RegisterTerminalResponse {
+  string id = 1;                    // ID терминала
+  string status = 2;                // Статус: "PENDING", "REGISTERED", "REJECTED"
+  string message = 3;               // Описание (например, "Successfully registered")
+  string received_at = 4;           // Время получения (ISO 8601 строка)
+}
+
+// Запрос на получение терминала по ID
+message GetTerminalRequest {
+  string id = 1;
+}
+
+// Ответ на получение терминала
+message GetTerminalResponse {
+  string id = 1;
+  map<string, string> data = 2;     // {"model": "...", "location": "..."}
+  string status = 3;                // "IN_PROCESS", "REGISTERED", "REJECTED", etc.
+  string source = 4;                // Откуда пришёл: "GRPC" или "KAFKA"
+  string created_at = 5;            // Время создания
+  string updated_at = 6;            // Время обновления
+  string received_at = 7;           // Время получения запроса
+}
+
+// Сервис для регистрации терминала
+service TerminalRegistrationService {
+  // Регистрация терминала (один вызов = один ответ)
+  rpc RegisterTerminal(RegisterTerminalRequest) returns (RegisterTerminalResponse);
+}
+
+// Сервис для получения данных терминала
+service TerminalQueryService {
+  // Получить терминал по ID
+  rpc GetTerminal(GetTerminalRequest) returns (GetTerminalResponse);
+}
