@@ -188,6 +188,8 @@
         <th>Model</th>
         <th>Location</th>
         <th>Status</th>
+        <th>Source</th>
+        <th>Received At</th>
         <th>Created At</th>
         <th>Updated At</th>
     </tr>
@@ -199,6 +201,8 @@
         <td>{t.model}</td>
         <td>{t.location}</td>
         <td>{t.status}</td>
+        <td>{t.source}</td>
+        <td>{t.receivedAt}</td>
         <td>{t.createdAt}</td>
         <td>{t.updatedAt}</td>
     </tr>
@@ -291,6 +295,8 @@
                                          '<td>' + data.processor.model + '</td>' +
                                          '<td>' + data.processor.location + '</td>' +
                                          '<td>' + data.processor.status + '</td>' +
+                                         '<td>' + (data.processor.source || 'N/A') + '</td>' +
+                                         '<td>' + (data.processor.receivedAt || 'N/A') + '</td>' +
                                          '<td>' + data.processor.createdAt + '</td>' +
                                          '<td>' + data.processor.updatedAt + '</td>';
                         tbodyProcessor.appendChild(rowP);
