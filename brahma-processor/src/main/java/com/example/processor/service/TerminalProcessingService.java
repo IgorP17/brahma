@@ -5,7 +5,6 @@ import com.example.common.TerminalStatus;
 import com.example.processor.kafka.TerminalRegisteredProducer;
 import com.example.processor.message.TerminalRegistrationMessage;
 import com.example.processor.utils.JsonParser;
-import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -70,14 +69,17 @@ public class TerminalProcessingService {
             terminal.id = id;
             terminal.data = data;
             terminal.status = status;
-            terminal.createdAt = LocalDateTime.now();
+            terminal.source = "KAFKA";              // Указать источник
+            terminal.receivedAt = LocalDateTime.now(); // Указать время получения
             terminal.updatedAt = null;
+            terminal.createdAt = LocalDateTime.now(); // created after received
             terminal.persist();
             log.info("✅ Terminal " + id + " created in DB.");
         } else {
             terminal.data = data;
             terminal.status = status;
             terminal.updatedAt = LocalDateTime.now();
+            terminal.source = "KAFKA";
             terminal.persist();
             log.info("✅ Terminal " + id + " updated in DB.");
         }

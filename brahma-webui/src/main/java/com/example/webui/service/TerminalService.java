@@ -48,6 +48,8 @@ public class TerminalService {
             view.status = "-";
             view.createdAt = "-";
             view.updatedAt = "-";
+            view.source = "-";
+            view.receivedAt = "-";
             log.warnf("⚠️ Terminal %s not found in processor", id);
         } else {
             view.id = t.id;
@@ -56,6 +58,8 @@ public class TerminalService {
             view.status = t.status;
             view.createdAt = t.createdAt != null ? t.createdAt.toString() : "";
             view.updatedAt = t.updatedAt != null ? t.updatedAt.toString() : "";
+            view.source = t.source;
+            view.receivedAt = t.receivedAt != null ? t.receivedAt.toString() : "";
             log.infof("✅ Terminal %s found in processor", id);
         }
         return view;
