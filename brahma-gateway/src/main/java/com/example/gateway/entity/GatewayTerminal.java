@@ -26,6 +26,14 @@ public class GatewayTerminal extends PanacheEntityBase {
     @Column(name = "updated_at")
     public java.time.LocalDateTime updatedAt;
 
+    // === НОВЫЕ ПОЛЯ ===
+    @Column(name = "source")
+    public String source; // "KAFKA" or "GRPC"
+
+    @Column(name = "received_at")
+    public java.time.LocalDateTime receivedAt; // When request was received
+    // ==================
+
     // Геттеры (обязательно для Hibernate)
     public TerminalStatus getStatus() {
         return status;

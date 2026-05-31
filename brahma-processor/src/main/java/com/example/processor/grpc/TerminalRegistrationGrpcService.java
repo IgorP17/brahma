@@ -3,11 +3,10 @@ package com.example.processor.grpc;
 import com.example.common.TerminalLogicHelper;
 import com.example.common.TerminalStatus;
 import com.example.processor.entity.ProcessorTerminal;
-import com.example.processor.grpc.*;
 import com.example.terminal.grpc.*;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.annotation.Blocking;
-import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
@@ -20,6 +19,7 @@ public class TerminalRegistrationGrpcService extends TerminalRegistrationService
 
     @Override
     @Blocking
+    @Transactional
     public void registerTerminal(RegisterTerminalRequest request, io.grpc.stub.StreamObserver<RegisterTerminalResponse> responseObserver) {
         String id = request.getId();
         Map<String, String> dataMap = request.getDataMap();
@@ -28,7 +28,8 @@ public class TerminalRegistrationGrpcService extends TerminalRegistrationService
         log.infof("📥 gRPC: Received registration request for terminal %s via %s", id, source);
 
         try {
-            String status = TerminalLogicHelper.determineStatus(dataMap.get("location")).name();
+            // Получаем сразу Enum, никаких строк!
+            TerminalStatus status = TerminalLogicHelper.determineStatus(dataMap.get("location"));
 
             // Save to DB
             ProcessorTerminal terminal = ProcessorTerminal.findById(id);
@@ -44,6 +45,7 @@ public class TerminalRegistrationGrpcService extends TerminalRegistrationService
             }
             terminal.source = source; // "GRPC"
             terminal.receivedAt = LocalDateTime.now();
+            terminal.status = status;
 
             terminal.persist();
 
@@ -52,7 +54,7 @@ public class TerminalRegistrationGrpcService extends TerminalRegistrationService
             // Prepare response
             RegisterTerminalResponse response = RegisterTerminalResponse.newBuilder()
                     .setId(id)
-                    .setStatus(status)
+                    .setStatus(status.name())
                     .setMessage("Successfully registered via " + source)
                     .setReceivedAt(terminal.receivedAt.toString()) // ISO string
                     .build();

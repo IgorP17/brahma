@@ -87,3 +87,95 @@ curl -X POST http://localhost:8080/api/register \
   -d '{"id":"TERM-00021","data":{"model":"ABC","location":"Moscow"}}'
 
 http://localhost:8080/q/dev-ui/
+```
+
+grpc curl
+```bash
+sudo apt install golang-go
+go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
+export PATH="$PATH:$HOME/go/bin" /// добавить в .bashrc
+source ~/.bashrc
+
+grpcurl -plaintext localhost:9000 list
+grpcurl -plaintext localhost:9000 describe com.example.terminal.TerminalRegistrationService
+grpcurl -plaintext localhost:9000 describe com.example.terminal.RegisterTerminalRequest
+grpcurl -plaintext localhost:9000 describe com.example.terminal.RegisterTerminalRequest
+
+grpcurl -plaintext \
+  -d '{
+    "id": "TERM-00021",
+    "data": {
+      "model": "TEST-GRPC",
+      "location": "Moscow"
+    },
+    "source": "GRPC_TEST"
+  }' \
+  localhost:9000 \
+  com.example.terminal.TerminalRegistrationService/RegisterTerminal
+```
+
+Вызов brahma-gateway по http для регистрации через grpc
+```bash
+curl -X POST http://localhost:8080/api/register-grpc \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "id=TERM-00021" \
+  --data-urlencode "model=GW-FORM-API-TEST" \
+  --data-urlencode "location=London"
+```
+
+/////// TODO - SQL
+
+<h3>Register via gRPC (test)</h3>
+<form id="register-grpc-form">
+    <div class="form-group">
+        <label for="grpc-id">Terminal ID:</label>
+        <input type="text" id="grpc-id" name="id" placeholder="e.g., TERM-00022" required>
+    </div>
+    <div class="form-group">
+        <label for="grpc-model">Model:</label>
+        <input type="text" id="grpc-model" name="model" placeholder="e.g., ABC" required>
+    </div>
+    <div class="form-group">
+        <label for="grpc-location">Location:</label>
+        <input type="text" id="grpc-location" name="location" placeholder="e.g., Moscow" required>
+    </div>
+    <input type="submit" value="Register via gRPC">
+</form>
+
+<div id="grpc-result"></div>
+
+<script>
+document.getElementById('register-grpc-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const params = new URLSearchParams();
+    params.append('id', formData.get('id'));
+    params.append('model', formData.get('model'));
+    params.append('location', formData.get('location'));
+
+    const resultDiv = document.getElementById('grpc-result');
+    resultDiv.style.display = 'block';
+    resultDiv.textContent = 'Sending...';
+    resultDiv.className = 'success';
+
+    try {
+        const response = await fetch('/register-grpc', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString()
+        });
+
+        const text = await response.text();
+        if (response.ok) {
+            resultDiv.textContent = '✅ ' + text;
+            resultDiv.className = 'success';
+        } else {
+            resultDiv.textContent = '❌ ' + text;
+            resultDiv.className = 'error';
+        }
+    } catch (err) {
+        resultDiv.textContent = '❌ Network error: ' + err.message;
+        resultDiv.className = 'error';
+    }
+});
+</script>

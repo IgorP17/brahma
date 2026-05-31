@@ -33,6 +33,27 @@
 
     <build>
         <plugins>
+            <!--
+            TerminalRegistrationGrpcService наследуется от TerminalRegistrationServiceGrpc.TerminalRegistrationServiceImplBase,
+            который находится в модуле brahma-common.
+            В режиме prod Quarkus не сканирует весь classpath "наивным" поиском.
+            Он использует индекс (META-INF/jandex.idx). Если в brahma-common нет этого индекса,
+            Quarkus не может понять, от кого наследуется ваш сервис, считает его сломанным/незавершенным
+            и выкидывает из контекста. А раз сервисов нет — вырезает и grpc-server.
+            -->
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
+                <version>3.5.3</version> <!-- Используйте актуальную версию -->
+                <executions>
+                    <execution>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <!-- OS detection -->
             <plugin>
                 <groupId>kr.motd.maven</groupId>

@@ -1,7 +1,9 @@
 package com.example.gateway.api;
 
 import com.example.gateway.dto.TerminalRegistration;
+import com.example.gateway.grpc.TerminalRegistrationGrpcClient;
 import com.example.gateway.kafka.TerminalRegistrationProducer;
+import com.example.terminal.grpc.RegisterTerminalResponse;
 import jakarta.transaction.Transactional;
 import com.example.common.TerminalStatus;
 import com.example.gateway.entity.GatewayTerminal;
@@ -14,6 +16,8 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 @Path("/api")
@@ -75,6 +79,56 @@ public class GatewayResource {
         return Response.ok()
                 .entity("{\"status\":\"pending\",\"id\":\"" + id + "\"}")
                 .build();
+    }
+
+    @Inject
+    TerminalRegistrationGrpcClient terminalRegistrationGrpcClient;
+
+    @POST
+    @Path("/register-grpc")
+    @Transactional
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response registerTerminalViaGrpc(
+            @FormParam("id") String id,
+            @FormParam("model") String model,
+            @FormParam("location") String location) {
+
+        log.infof("🌐 HTTP REQUEST: POST /register-grpc - Terminal ID: %s, Model: %s, Location: %s", id, model, location);
+
+        var data = java.util.Map.of("model", model, "location", location);
+
+        try {
+            // Вызов gRPC
+            RegisterTerminalResponse grpcResponse = terminalRegistrationGrpcClient.registerTerminal(id, data, "GRPC");
+
+            // Сохранение в gateway.terminals
+            GatewayTerminal t = new GatewayTerminal();
+            t.id = id;
+            // Map<String, String> → Map<String, Object> через ковариантность
+            // явная копия
+//            t.data = new java.util.HashMap<>(data);
+            // еще безопаснее ?
+            t.data = Collections.unmodifiableMap(new HashMap<>(data));
+            t.status = TerminalStatus.valueOf(grpcResponse.getStatus());
+            t.createdAt = LocalDateTime.now();
+            t.updatedAt = null;
+            t.source = "GRPC";
+            t.receivedAt = LocalDateTime.now();
+            t.persist();
+
+            log.infof("✅ Terminal %s registered via gRPC, status: %s", id, grpcResponse.getStatus());
+            var response = Map.of(
+                    "id", id,
+                    "status", grpcResponse.getStatus(),
+                    "message", grpcResponse.getMessage(),
+                    "receivedAt", grpcResponse.getReceivedAt()
+            );
+            return Response.ok(response).build();
+        } catch (Exception e) {
+            log.errorf("❌ gRPC call failed for terminal %s: %s", id, e.getMessage(), e);
+            return Response.status(500).entity("gRPC error: " + e.getMessage()).build();
+        }
     }
 
     @GET
