@@ -7,4 +7,6 @@ public class TerminalViewGateway {
     public String status;
     public String createdAt;
     public String updatedAt;
+    public String source;
+    public String receivedAt;
 }

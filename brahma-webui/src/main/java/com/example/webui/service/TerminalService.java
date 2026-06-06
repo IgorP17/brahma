@@ -24,6 +24,8 @@ public class TerminalService {
             view.status = "-";
             view.createdAt = "-";
             view.updatedAt = "-";
+            view.source = "-";
+            view.receivedAt = "-";
             log.warnf("⚠️ Terminal %s not found in gateway", id);
         } else {
             view.id = t.id;
@@ -32,6 +34,8 @@ public class TerminalService {
             view.status = t.status;
             view.createdAt = t.createdAt != null ? t.createdAt.toString() : "";
             view.updatedAt = t.updatedAt != null ? t.updatedAt.toString() : "";
+            view.receivedAt = t.receivedAt != null ? t.receivedAt.toString() : "";
+            view.source = t.source;
             log.infof("✅ Terminal %s found in gateway", id);
         }
         return view;

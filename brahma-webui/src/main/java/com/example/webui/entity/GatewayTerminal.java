@@ -37,4 +37,9 @@ public class GatewayTerminal extends PanacheEntityBase {
         if (id == null) return;
         GatewayTerminal.delete("id", id);
     }
+
+    @Column(name = "received_at")
+    public java.time.LocalDateTime receivedAt;
+
+    public String source;
 }
