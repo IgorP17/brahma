@@ -123,4 +123,3 @@ curl -X POST http://localhost:8080/api/register-grpc \
   --data-urlencode "location=London"
 ```
 
-/////// TODO - SQL
