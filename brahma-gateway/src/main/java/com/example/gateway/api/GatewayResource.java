@@ -52,6 +52,8 @@ public class GatewayResource {
             terminal.status = status;
             terminal.createdAt = LocalDateTime.now();
             terminal.updatedAt = null;  // 🔥 NULL при создании
+            terminal.receivedAt = LocalDateTime.now();
+            terminal.source = "KAFKAAA";
             terminal.persist();
         } else {
             terminal.data = data;
