@@ -144,3 +144,11 @@ igor@igor-VirtualBox:~$ minikube ip
 
 открываем на
 http://minikube:30082/
+
+
+!!!!!!!!!!!
+# Вариант A: Удалить под (Kubernetes сам пересоздаст)
+kubectl delete pod -l app=brahma-webui
+
+# Вариант B: Rolling restart (более элегантно)
+kubectl rollout restart deployment/brahma-webui

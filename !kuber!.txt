@@ -1,0 +1,5 @@
+# логи
+kubectl logs -l app=brahma-webui -f
+
+# перезапустить под
+kubectl rollout restart deployment/brahma-webui

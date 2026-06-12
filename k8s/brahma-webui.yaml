@@ -11,9 +11,9 @@ spec:
   ports:
     - name: http
       protocol: TCP
-      port: 8082        # Порт внутри кластера
-      targetPort: 8082  # Порт в контейнере
-      nodePort: 30082   # ← Порт на хосте (30000-32767)
+      port: 8082
+      targetPort: 8082
+      nodePort: 30082
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -34,13 +34,17 @@ spec:
       containers:
         - name: webui
           image: brahma-webui:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent  # ← ИСПРАВЛЕНО
           ports:
             - containerPort: 8082
+          envFrom:
+            - configMapRef:
+                name: brahma-config
+            - secretRef:
+                name: brahma-secret
           env:
-            # Если нужно указать URL к backend (gateway)
             - name: BACKEND_URL
-              value: "http://localhost:8080"  # Пока localhost, потом заменим
+              value: "http://brahma-gateway:8080"  # ← ИСПРАВЛЕНО
           resources:
             requests:
               memory: "256Mi"
