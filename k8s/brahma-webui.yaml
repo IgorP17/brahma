@@ -5,7 +5,7 @@ metadata:
   labels:
     app: brahma-webui
 spec:
-  type: ClusterIP  # Внутренний сервис
+  type: NodePort
   selector:
     app: brahma-webui
   ports:
@@ -13,6 +13,7 @@ spec:
       protocol: TCP
       port: 8082        # Порт внутри кластера
       targetPort: 8082  # Порт в контейнере
+      nodePort: 30082   # ← Порт на хосте (30000-32767)
 ---
 apiVersion: apps/v1
 kind: Deployment

@@ -133,3 +133,14 @@ minikube ip
 
 # Открой в браузере:
 http://192.168.49.2:30082
+
+!!!!!!!!!!!!!!!!!!!!!!!!
+sudo nano /etc/hosts
+192.168.49.2    minikube
+
+как узнать
+igor@igor-VirtualBox:~$ minikube ip
+192.168.49.2
+
+открываем на
+http://minikube:30082/
