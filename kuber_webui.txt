@@ -1,0 +1,135 @@
+---------- Шаг 1: Создай Dockerfile для brahma-webui
+Создай файл ~/brahma/brahma-webui/Dockerfile:
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+COPY target/*-runner.jar app.jar
+
+# Expose порт 8082 (стандартный для Quarkus)
+EXPOSE 8082
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
+
+---------- Шаг 2: Собери JAR и Docker-образ
+# Перейди в директорию brahma-webui
+cd ~/brahma/brahma-webui
+
+# Собери приложение (создаст runner.jar)
+mvn clean package -Dquarkus.package.jar.type=uber-jar
+
+# Переключись на Docker Minikube (важно!)
+eval $(minikube docker-env)
+
+# Собери Docker-образ
+docker build -t brahma-webui:latest .
+
+
+---------- Шаг 3: Создай Kubernetes манифест
+Создай папку ~/brahma/k8s/ (если нет) и файл ~/brahma/k8s/brahma-webui.yaml:
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: brahma-webui
+  labels:
+    app: brahma-webui
+spec:
+  type: ClusterIP  # Внутренний сервис
+  selector:
+    app: brahma-webui
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8082        # Порт внутри кластера
+      targetPort: 8082  # Порт в контейнере
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brahma-webui
+  labels:
+    app: brahma-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: brahma-webui
+  template:
+    metadata:
+      labels:
+        app: brahma-webui
+    spec:
+      containers:
+        - name: webui
+          image: brahma-webui:latest
+          ports:
+            - containerPort: 8082
+          env:
+            # Если нужно указать URL к backend (gateway)
+            - name: BACKEND_URL
+              value: "http://localhost:8080"  # Пока localhost, потом заменим
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+---------- Шаг 4: Примени манифест в Kubernetes
+# Примени манифест
+kubectl apply -f ~/brahma/k8s/brahma-webui.yaml
+если не сработает
+//igor@igor-VirtualBox:~$ minikube status
+  minikube
+  type: Control Plane
+  host: Running
+  kubelet: Stopped
+  apiserver: Stopped
+  kubeconfig: Configured
+// рестарт
+// minikube stop
+// minikube start
+
+# Проверь статус
+kubectl get pods -l app=brahma-webui
+kubectl get svc brahma-webui
+
+// удалить если что
+kubectl delete deployment brahma-webui
+kubectl delete svc brahma-webui
+kubectl get pods -l app=brahma-webui  # должно быть пусто
+kubectl get pods -l app=brahma-webui -w
+
+---------- Шаг 5: Пробрось порт 28082 → 8082
+# Пробрось порт (это создаст туннель)
+kubectl port-forward svc/brahma-webui 28082:8082
+
+Не закрывай этот терминал! Оставь его работать.
+
+---------- Шаг 6: Проверь доступ
+Открой браузер и перейди:
+http://localhost:28082
+или
+curl http://localhost:28082
+
+---------- Шаг 7: (Опционально) Сделай доступ через NodePort
+Если хочешь, чтобы приложение было доступно без kubectl port-forward, измени Service на NodePort:
+# В brahma-webui.yaml замени:
+spec:
+  type: NodePort  # Было: ClusterIP
+  ports:
+    - name: http
+      port: 8082
+      targetPort: 8082
+      nodePort: 30082  # Фиксированный порт (30000-32767)
+
+kubectl apply -f ~/brahma/k8s/brahma-webui.yaml
+
+# Узнай IP Minikube
+minikube ip
+# Обычно: 192.168.49.2
+
+# Открой в браузере:
+http://192.168.49.2:30082

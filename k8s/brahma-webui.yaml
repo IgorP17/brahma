@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: brahma-webui
+  labels:
+    app: brahma-webui
+spec:
+  type: ClusterIP  # Внутренний сервис
+  selector:
+    app: brahma-webui
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8082        # Порт внутри кластера
+      targetPort: 8082  # Порт в контейнере
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brahma-webui
+  labels:
+    app: brahma-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: brahma-webui
+  template:
+    metadata:
+      labels:
+        app: brahma-webui
+    spec:
+      containers:
+        - name: webui
+          image: brahma-webui:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8082
+          env:
+            # Если нужно указать URL к backend (gateway)
+            - name: BACKEND_URL
+              value: "http://localhost:8080"  # Пока localhost, потом заменим
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
