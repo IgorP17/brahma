@@ -5,8 +5,7 @@ pipeline {
         APP_NAME = 'brahma-webui'
         REGISTRY = 'localhost:5000'
         K8S_NAMESPACE = 'default'
-        // Тег образа: дата-время + короткий хеш коммита
-        IMAGE_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT?.take(7)}"
+        IMAGE_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT?.take(7) ?: 'latest'}"
     }
 
     stages {
@@ -18,14 +17,17 @@ pipeline {
 
         stage('Build & Install Common') {
             steps {
-                // Если brahma-common в том же репо, собираем его первым
-                sh 'cd ../brahma-common && mvn clean install -DskipTests'
+                dir('brahma-common') {
+                    sh 'mvn clean install -DskipTests'
+                }
             }
         }
 
         stage('Maven Build') {
             steps {
-                sh 'mvn clean package -Dquarkus.package.jar.type=uber-jar -DskipTests'
+                dir('brahma-webui') {
+                    sh 'mvn clean package -Dquarkus.package.jar.type=uber-jar -DskipTests'
+                }
             }
         }
 
@@ -33,8 +35,10 @@ pipeline {
             steps {
                 script {
                     def image = "${REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
-                    sh "docker build -t ${image} ."
-                    sh "docker push ${image}"
+                    dir('brahma-webui') {
+                        sh "docker build -t ${image} ."
+                        sh "docker push ${image}"
+                    }
                 }
             }
         }
@@ -43,7 +47,6 @@ pipeline {
             steps {
                 script {
                     def image = "${REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
-                    // Обновляем только образ, не трогая YAML-конфигурацию
                     sh """
                         kubectl set image deployment/${APP_NAME} \
                             ${APP_NAME}=${image} \
@@ -56,7 +59,7 @@ pipeline {
 
         stage('Verify') {
             steps {
-                sh 'curl -sf http://minikube:30082 || exit 1'
+                sh 'curl -sf http://minikube:30082/q/health || exit 1'
             }
         }
     }
