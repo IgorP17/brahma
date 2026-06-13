@@ -171,7 +171,68 @@ Script Path
 brahma-webui/Jenkinsfile (путь к файлу относительно корня репо)
 Шаг 4: Настрой триггеры (опционально)
 
+//////// мавен не там стоит, не для jenkins
+# Удали старый симлинк
+sudo rm /usr/local/bin/mvn
 
+# Создай правильный скрипт
+sudo tee /usr/local/bin/mvn << 'EOF'
+#!/bin/bash
+export HOME=${HOME:-/var/lib/jenkins}
+exec /opt/apache-maven-3.9.9/bin/mvn "$@"
+EOF
+
+sudo chmod +x /usr/local/bin/mvn
+
+sudo -u jenkins mvn -version
+
+sudo systemctl restart jenkins
+
+///----------------------------------------------------
+Чек-лист подготовки Jenkins
+
+----- 1. Доступ к Docker
+sudo usermod -aG docker jenkins
+
+----- 2. Доступ к kubectl
+# Скопируй kubeconfig для пользователя jenkins
+sudo mkdir -p /var/lib/jenkins/.kube
+sudo cp ~/.kube/config /var/lib/jenkins/.kube/config
+sudo chown -R jenkins:jenkins /var/lib/jenkins/.kube
+sudo chmod 600 /var/lib/jenkins/.kube/config
+
+----- 3. Доступ к minikube
+sudo cp -r ~/.minikube /var/lib/jenkins/.minikube
+sudo chown -R jenkins:jenkins /var/lib/jenkins/.minikube
+
+----- 4. Проверь, что kubectl доступен пользователю jenkins
+/// серты
+sudo sed -i 's|/home/igor/.minikube|/var/lib/jenkins/.minikube|g' /var/lib/jenkins/.kube/config
+
+sudo chown -R jenkins:jenkins /var/lib/jenkins/.minikube
+sudo chmod -R u+rwX,go+rX /var/lib/jenkins/.minikube
+
+sudo -u jenkins kubectl get pods
+igor@igor-VirtualBox:/tmp$ sudo -u jenkins kubectl get pods
+NAME                            READY   STATUS    RESTARTS      AGE
+brahma-webui-5bf47c8b95-9v7vl   1/1     Running   3 (72m ago)   24h
+nginx-app-7f5dfb844c-jmgvf      1/1     Running   6 (72m ago)   2d18h
+igor@igor-VirtualBox:/tmp$ kubectl get pods
+NAME                            READY   STATUS    RESTARTS      AGE
+brahma-webui-5bf47c8b95-9v7vl   1/1     Running   3 (72m ago)   24h
+nginx-app-7f5dfb844c-jmgvf      1/1     Running   6 (72m ago)   2d18h
+
+
+Если увидишь список подов — всё ок.
+
+----- 5. Проверь Docker
+sudo -u jenkins docker ps
+
+Если увидишь список контейнеров — всё ок.
+
+----- 6. Перезапусти Jenkins
+sudo systemctl restart jenkins
+////////////////////////////////////////////////////////////
 
 ----------
 Как масштабировать на gateway и processor
