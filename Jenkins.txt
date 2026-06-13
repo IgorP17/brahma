@@ -1,0 +1,191 @@
+---------- 1. Включи Docker Registry в Minikube
+Чтобы не мучиться с eval $(minikube docker-env) и imagePullPolicy: Never, включи встроенный registry:
+
+minikube addons enable registry
+minikube addons enable registry-aliases
+
+Теперь ты сможешь пушить образы на localhost:5000 или minikube.local:5000, а Kubernetes будет их забирать без проблем.
+
+--------- 2. Установи Jenkins (на хосте или в K8s)
+Для начала проще поставить на хост:
+
+# Ubuntu/Debian
+sudo rm /usr/share/keyrings/jenkins-keyring.asc
+sudo rm /etc/apt/sources.list.d/jenkins.list
+
+sudo wget -O /etc/apt/keyrings/jenkins-keyring.asc \
+  https://pkg.jenkins.io/debian/jenkins.io-2026.key
+echo "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc]" \
+  https://pkg.jenkins.io/debian binary/ | sudo tee \
+  /etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update
+sudo apt install jenkins
+
+The package installation will:
+
+Setup Jenkins as a daemon launched on start. Run systemctl cat jenkins for more details.
+
+Create a jenkins user to run this service.
+
+Direct console log output to systemd-journald. Run journalctl -u jenkins.service if you are troubleshooting Jenkins.
+
+Populate /lib/systemd/system/jenkins.service with configuration parameters for the launch, e.g JENKINS_HOME
+
+Set Jenkins to listen on port 8080. Access this port with your browser to start configuration.
+
+If Jenkins fails to start because a port is in use, run systemctl edit jenkins and add the following:
+
+[Service]
+Environment="JENKINS_PORT=8081"
+Here, "8081" was chosen but you can put another port available.
+
+--------------- Рабочая перебивка порта
+sudo mkdir -p /etc/systemd/system/jenkins.service.d
+sudo nano /etc/systemd/system/jenkins.service.d/override.conf
+
+добавить
+[Service]
+Environment="JENKINS_PORT=9090"
+
+sudo systemctl daemon-reload
+sudo systemctl restart jenkins
+
+igor@igor-VirtualBox:~$ sudo netstat -tulpan | grep 9090
+tcp6       0      0 :::9090                 :::*                    LISTEN      38937/java
+
+// sudo systemctl enable jenkins
+// sudo systemctl start jenkins
+// sudo systemctl status jenkins
+
+
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+http://localhost:9090
+
+
+---------- 3. Установи плагины в Jenkins
+    Git
+    Pipeline
+    Docker Pipeline
+    Kubernetes CLI
+    Config File Provider (опционально)
+
+---------- Пример Jenkinsfile для brahma-webui
+           Создай brahma-webui/Jenkinsfile в репозитории:
+
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'brahma-webui'
+        REGISTRY = 'localhost:5000'
+        K8S_NAMESPACE = 'default'
+        // Тег образа: дата-время + короткий хеш коммита
+        IMAGE_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT?.take(7)}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build & Install Common') {
+            steps {
+                // Если brahma-common в том же репо, собираем его первым
+                sh 'cd ../brahma-common && mvn clean install -DskipTests'
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean package -Dquarkus.package.jar.type=uber-jar -DskipTests'
+            }
+        }
+
+        stage('Docker Build & Push') {
+            steps {
+                script {
+                    def image = "${REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
+                    sh "docker build -t ${image} ."
+                    sh "docker push ${image}"
+                }
+            }
+        }
+
+        stage('Deploy to K8s') {
+            steps {
+                script {
+                    def image = "${REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
+                    // Обновляем только образ, не трогая YAML-конфигурацию
+                    sh """
+                        kubectl set image deployment/${APP_NAME} \
+                            ${APP_NAME}=${image} \
+                            -n ${K8S_NAMESPACE}
+                        kubectl rollout status deployment/${APP_NAME} -n ${K8S_NAMESPACE} --timeout=120s
+                    """
+                }
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                sh 'curl -sf http://minikube:30082 || exit 1'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ ${APP_NAME} успешно задеплоен с тегом ${IMAGE_TAG}"
+        }
+        failure {
+            echo "❌ Деплой ${APP_NAME} провален. Проверь логи."
+        }
+    }
+}
+
+//////////
+📋 Настройка Jenkins Pipeline
+Шаг 1: Перейди в раздел Pipeline
+На странице конфигурации (которая у тебя открыта) нажми слева на "Pipeline".
+Шаг 2: Выбери источник Pipeline
+Прокрути вниз до секции Pipeline и выбери:
+✅ Pipeline script from SCM (вместо "Pipeline")
+Шаг 3: Настрой Git
+В появившихся полях заполни:
+Поле
+
+Значение
+SCM
+
+Git
+Repositories → Repository URL
+
+URL твоего Git репозитория (GitHub/GitLab и т.д.)
+Branch Specifier
+
+*/main (или */master, */develop — какая у тебя основная ветка)
+Script Path
+
+brahma-webui/Jenkinsfile (путь к файлу относительно корня репо)
+Шаг 4: Настрой триггеры (опционально)
+
+
+
+----------
+Как масштабировать на gateway и processor
+Вариант A: Отдельные Jenkinsfile (рекомендуется)
+Скопируй шаблон в brahma-gateway/Jenkinsfile и brahma-processor/Jenkinsfile, поменяв:
+
+    APP_NAME
+    Порты в stage Verify
+    Зависимости (например, processor может требовать common и gateway protobuf-классы)
+
+Вариант B: Один пайплайн с выбором сервиса
+Создай параметризованный Job в Jenkins:
+
+    Parameter: SERVICE (choice: webui, gateway, processor)
+    В Jenkinsfile используй params.SERVICE для путей и имён.
+
+----------
