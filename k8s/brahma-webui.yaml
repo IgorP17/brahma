@@ -32,7 +32,7 @@ spec:
         app: brahma-webui
     spec:
       containers:
-        - name: webui
+        - name: brahma-webui
           image: brahma-webui:latest
           imagePullPolicy: IfNotPresent  # ← ИСПРАВЛЕНО
           ports:
