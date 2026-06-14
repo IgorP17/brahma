@@ -42,6 +42,13 @@ pipeline {
                 script {
                     def image = "${APP_NAME}:${IMAGE_TAG}"
                     sh """
+                        # Проверяем, существует ли deployment
+                        if ! kubectl get deployment ${APP_NAME} -n ${K8S_NAMESPACE} > /dev/null 2>&1; then
+                            echo "Deployment не найден, создаём из YAML..."
+                            kubectl apply -f k8s/brahma-webui.yaml -n ${K8S_NAMESPACE}
+                            sleep 30
+                        fi
+
                         kubectl set image deployment/${APP_NAME} \
                             ${APP_NAME}=${image} \
                             -n ${K8S_NAMESPACE}
