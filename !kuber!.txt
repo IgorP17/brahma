@@ -40,3 +40,20 @@ minikube status
 
 ////////////////////
 minikube addons enable registry
+
+
+# 1. Удали все поды (Kubernetes создаст новые с новым образом)
+kubectl delete pod -l app=brahma-webui
+
+# 2. Подожди 30-40 секунд
+sleep 40
+
+# 3. Проверь, что под пересоздался
+kubectl get pods -l app=brahma-webui
+
+# 4. Проверь время создания (должно быть сейчас)
+kubectl get pod -l app=brahma-webui -o jsonpath='{.items[0].metadata.creationTimestamp}'
+
+# 5. Проверь содержимое
+kubectl exec -it $(kubectl get pod -l app=brahma-webui -o jsonpath='{.items[0].metadata.name}') -- \
+  cat /app/templates/index.html | grep "Welcome to Brahma"
