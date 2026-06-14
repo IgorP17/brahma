@@ -46,6 +46,8 @@ pipeline {
                         kubectl set image deployment/${APP_NAME} \
                             ${APP_NAME}=${image} \
                             -n ${K8S_NAMESPACE}
+                        # Принудительно перезапускаем поды, чтобы они подхватили новый образ
+                        kubectl rollout restart deployment/${APP_NAME} -n ${K8S_NAMESPACE}
                         kubectl rollout status deployment/${APP_NAME} -n ${K8S_NAMESPACE} --timeout=120s
                     """
                 }
