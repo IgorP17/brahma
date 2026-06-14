@@ -26,7 +26,8 @@ pipeline {
         stage('Docker Build & Load') {
             steps {
                 script {
-                    def image = "${APP_NAME}:${IMAGE_TAG}"
+                    // Используем тег latest вместо уникального
+                    def image = "${APP_NAME}:latest"
                     dir('brahma-webui') {
                         sh "docker build -t ${image} ."
                         sh "minikube image load ${image}"
@@ -38,7 +39,7 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
-                    def image = "${APP_NAME}:${IMAGE_TAG}"
+                    def image = "${APP_NAME}:latest"
                     sh """
                         kubectl set image deployment/${APP_NAME} \
                             ${APP_NAME}=${image} \
