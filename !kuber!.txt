@@ -1,6 +1,9 @@
 # логи
 kubectl logs -l app=brahma-webui -f
 
+# применить
+kubectl apply -f k8s/brahma-webui.yaml
+
 # перезапустить под
 kubectl rollout restart deployment/brahma-webui
 
