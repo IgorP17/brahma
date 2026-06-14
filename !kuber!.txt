@@ -3,3 +3,30 @@ kubectl logs -l app=brahma-webui -f
 
 # перезапустить под
 kubectl rollout restart deployment/brahma-webui
+
+ Решение 1: Автозапуск Minikube при старте системы
+sudo tee /etc/systemd/system/minikube.service << 'EOF'
+[Unit]
+Description=Minikube
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=igor
+ExecStart=/usr/local/bin/minikube start --driver=docker --wait=false
+ExecStop=/usr/local/bin/minikube stop
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+Включи сервис
+sudo systemctl daemon-reload
+sudo systemctl enable minikube.service
+
+проверь
+sudo systemctl start minikube.service
+minikube status
