@@ -30,3 +30,6 @@ sudo systemctl enable minikube.service
 проверь
 sudo systemctl start minikube.service
 minikube status
+
+////////////////////
+minikube addons enable registry

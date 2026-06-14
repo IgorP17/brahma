@@ -5,6 +5,8 @@ pipeline {
         APP_NAME = 'brahma-webui'
         K8S_NAMESPACE = 'default'
         IMAGE_TAG = "${env.BUILD_ID}-${env.GIT_COMMIT?.take(7) ?: 'latest'}"
+        // Добавляем registry в переменную окружения
+        REGISTRY = 'localhost:5000'
     }
 
     stages {
@@ -16,23 +18,20 @@ pipeline {
 
         stage('Maven Build') {
             steps {
-                // Собираем весь проект из корня (включая parent POM)
                 sh 'mvn clean install -DskipTests'
-
-                // Пересобираем webui с uber-jar
                 dir('brahma-webui') {
                     sh 'mvn package -Dquarkus.package.jar.type=uber-jar -DskipTests'
                 }
             }
         }
 
-        stage('Docker Build & Load') {
+        stage('Docker Build & Push') {
             steps {
                 script {
-                    def image = "${APP_NAME}:${IMAGE_TAG}"
+                    def image = "${REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
                     dir('brahma-webui') {
                         sh "docker build -t ${image} ."
-                        sh "minikube image load ${image}"
+                        sh "docker push ${image}"
                     }
                 }
             }
@@ -41,7 +40,8 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
-                    def image = "${APP_NAME}:${IMAGE_TAG}"
+                    // Используем ТОТ ЖЕ образ с registry
+                    def image = "${REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
                     sh """
                         kubectl set image deployment/${APP_NAME} \
                             ${APP_NAME}=${image} \
