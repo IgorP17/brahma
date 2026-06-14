@@ -60,10 +60,12 @@ pipeline {
 
                     echo "Waiting for app at http://${minikubeIp}:30082..."
 
-                    sh '''
+                    // Используем двойные кавычки, чтобы Groovy подставил minikubeIp.
+                    // Экранируем \$i слешом, чтобы Groovy не пытался искать переменную i, а передал $i в bash.
+                    sh """
                         for i in 1 2 3 4 5; do
-                            echo "Attempt $i/5..."
-                            if curl -sf http://''' + minikubeIp + ''':30082 > /dev/null 2>&1; then
+                            echo "Attempt \$i/5..."
+                            if curl -sf http://${minikubeIp}:30082 > /dev/null 2>&1; then
                                 echo "App is responding!"
                                 exit 0
                             fi
@@ -71,10 +73,11 @@ pipeline {
                         done
                         echo "App did not respond after 5 attempts"
                         exit 1
-                    '''
+                    """
                 }
             }
         }
+    }
 
     post {
         success {
