@@ -1,3 +1,7 @@
+kubectl get pods -l app=brahma-webui
+
+kubectl get svc brahma-webui
+
 # логи
 kubectl logs -l app=brahma-webui -f
 
