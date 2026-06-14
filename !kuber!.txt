@@ -58,8 +58,8 @@ brahma-webui                                         9-510b857       0ff082ae720
 brahma-webui                                         8-510b857       ef2a2e306614   24 hours ago        451MB
 brahma-webui                                         7-c6eaab8       dabf127c7158   25 hours ago        451MB
 
-# 3. Удали проблемный под (Kubernetes создаст новый с правильным образом)
-kubectl delete pod brahma-webui-747dfddc8f-92x9g
+# 3. Удали все под
+kubectl delete pods -l app=brahma-webui -n default
 
 //////////
 # Удали все образы brahma-webui
@@ -67,3 +67,19 @@ docker rmi $(docker images | grep brahma-webui | awk '{print $3}') -f
 
 # Проверь
 docker images | grep brahma-webui
+
+
+///////////////////////////////////////////////////////////////
+# 1. Удаляем все остановленные контейнеры и висячие образы внутри Minikube
+minikube ssh -- docker system prune -f
+
+# 2. Принудительно удаляем наш старый образ
+minikube ssh -- docker rmi -f brahma-webui:latest
+
+# 3. Теперь загружаем свежий образ с хоста (так как старого внутри больше нет, он загрузится гарантированно)
+minikube image load brahma-webui:latest
+
+# 4. Удаляем поды для пересоздания
+kubectl delete pods -l app=brahma-webui -n default
+
+curl -s http://minikube:30082 | grep "Welcome to Brahma"

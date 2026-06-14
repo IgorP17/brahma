@@ -4,7 +4,8 @@ pipeline {
     environment {
         APP_NAME = 'brahma-webui'
         K8S_NAMESPACE = 'default'
-        IMAGE_TAG = 'latest'  // ← Всегда latest
+        // МАГИЯ ЗДЕСЬ: Берем номер текущей сборки Jenkins как тег
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
     stages {
@@ -16,9 +17,6 @@ pipeline {
 
         stage('Maven Build') {
             steps {
-                // Собираем всё проект сразу с нужным флагом для uber-jar.
-                // Это быстрее, чем собирать дважды.
-                // Флаг применится к Quarkus модулям.
                 sh 'mvn clean install -DskipTests -Dquarkus.package.jar.type=uber-jar'
             }
         }
@@ -38,13 +36,14 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
+                    def image = "${APP_NAME}:${IMAGE_TAG}"
                     sh """
-                        # 1. Применяем манифесты
+                        # 1. Применяем базовые настройки (сервисы, порты)
                         kubectl apply -f k8s/brahma-webui.yaml -n ${K8S_NAMESPACE}
 
-                        # 2. Делаем рестарт. Это ключевое действие для тега latest.
-                        # Без этого K8s не подтянет новый образ, если тег не изменился.
-                        kubectl rollout restart deployment/${APP_NAME} -n ${K8S_NAMESPACE}
+                        # 2. ОБНОВЛЯЕМ ОБРАЗ В DEPLOYMENT
+                        # K8s сам поймет, что тег новый, скачает его и перезапустит поды!
+                        kubectl set image deployment/${APP_NAME} ${APP_NAME}=${image} -n ${K8S_NAMESPACE}
 
                         # 3. Ждем завершения обновления
                         kubectl rollout status deployment/${APP_NAME} -n ${K8S_NAMESPACE} --timeout=120s
@@ -60,8 +59,6 @@ pipeline {
 
                     echo "Waiting for app at http://${minikubeIp}:30082..."
 
-                    // Используем двойные кавычки, чтобы Groovy подставил minikubeIp.
-                    // Экранируем \$i слешом, чтобы Groovy не пытался искать переменную i, а передал $i в bash.
                     sh """
                         for i in 1 2 3 4 5; do
                             echo "Attempt \$i/5..."
@@ -81,7 +78,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ ${APP_NAME} успешно задеплоен"
+            echo "✅ ${APP_NAME} версия ${IMAGE_TAG} успешно задеплоен"
         }
         failure {
             echo "❌ Деплой ${APP_NAME} провален. Проверь логи."
