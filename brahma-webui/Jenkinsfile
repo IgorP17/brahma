@@ -16,11 +16,10 @@ pipeline {
 
         stage('Maven Build') {
             steps {
-                sh 'mvn clean install -DskipTests'
-                dir('brahma-webui') {
-                    // ВАЖНО: добавляем clean!
-                    sh 'mvn clean package -Dquarkus.package.jar.type=uber-jar -DskipTests'
-                }
+                // Собираем всё проект сразу с нужным флагом для uber-jar.
+                // Это быстрее, чем собирать дважды.
+                // Флаг применится к Quarkus модулям.
+                sh 'mvn clean install -DskipTests -Dquarkus.package.jar.type=uber-jar'
             }
         }
 
@@ -39,20 +38,23 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
-                    def image = "${APP_NAME}:${IMAGE_TAG}"
-                    sh """
-                        # Проверяем, существует ли deployment
-                        if ! kubectl get deployment ${APP_NAME} -n ${K8S_NAMESPACE} > /dev/null 2>&1; then
-                            echo "Deployment не найден, создаём из YAML..."
-                            kubectl apply -f k8s/brahma-webui.yaml -n ${K8S_NAMESPACE}
-                            sleep 30
-                        fi
+                    // Если у вас папка k8s лежит внутри brahma-webui,
+                    // раскомментируйте строку ниже:
+                    // dir('brahma-webui') {
 
-                        kubectl set image deployment/${APP_NAME} \
-                            ${APP_NAME}=${image} \
-                            -n ${K8S_NAMESPACE}
+                    // Если k8s/brahma-webui.yaml в корне проекта, оставьте как есть:
+                    sh """
+                        // 1. Применяем манифесты (создаем/обновляем ресурсы)
+                        kubectl apply -f k8s/brahma-webui.yaml -n ${K8S_NAMESPACE}
+
+                        // 2. ДЕЛАЕМ РЕСТАРТ! Это ключевое действие для тега latest.
+                        // Без этого K8s не подтянет новый образ, если тег не изменился.
+                        kubectl rollout restart deployment/${APP_NAME} -n ${K8S_NAMESPACE}
+
+                        // 3. Ждем завершения обновления (замена вашего sleep 30)
                         kubectl rollout status deployment/${APP_NAME} -n ${K8S_NAMESPACE} --timeout=120s
                     """
+                    // } // закрывающая скобка dir, если использовали
                 }
             }
         }
@@ -60,15 +62,16 @@ pipeline {
         stage('Verify') {
             steps {
                 script {
-                    // Ждём, пока приложение реально запустится
-                    echo "⏳ Ожидаем старта приложения..."
-                    sleep 30
+                    // Получаем IP-адрес Minikube динамически (надежнее, чем хардкодить 'minikube')
+                    def minikubeIp = sh(script: 'minikube ip', returnStdout: true).trim()
+
+                    echo "⏳ Проверяем доступность приложения по адресу http://${minikubeIp}:30082..."
 
                     // Пробуем несколько раз
-                    sh '''
+                    sh """
                         for i in 1 2 3 4 5; do
-                            echo "Попытка $i/5..."
-                            if curl -sf http://minikube:30082 > /dev/null 2>&1; then
+                            echo "Попытка \$i/5..."
+                            if curl -sf http://${minikubeIp}:30082 > /dev/null 2>&1; then
                                 echo "✅ Приложение отвечает!"
                                 exit 0
                             fi
@@ -76,7 +79,7 @@ pipeline {
                         done
                         echo "❌ Приложение не отвечает после 5 попыток"
                         exit 1
-                    '''
+                    """
                 }
             }
         }
