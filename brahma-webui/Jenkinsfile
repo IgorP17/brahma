@@ -4,8 +4,7 @@ pipeline {
     environment {
         APP_NAME = 'brahma-webui'
         K8S_NAMESPACE = 'default'
-        // Используем уникальный тег на основе времени
-        IMAGE_TAG = "${System.currentTimeMillis()}"
+        IMAGE_TAG = 'latest'  // ← Всегда latest
     }
 
     stages {

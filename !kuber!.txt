@@ -42,18 +42,28 @@ minikube status
 minikube addons enable registry
 
 
-# 1. Удали все поды (Kubernetes создаст новые с новым образом)
-kubectl delete pod -l app=brahma-webui
+igor@igor-VirtualBox:~$ # 3. Проверь детали ошибки
+kubectl describe pod brahma-webui-747dfddc8f-92x9g | tail -20
 
-# 2. Подожди 30-40 секунд
-sleep 40
+igor@igor-VirtualBox:~$ # 1. Найди, какой образ создал Jenkins
+docker images | grep brahma-webui
+brahma-webui                                         1781448660485   177be550bae4   14 minutes ago      451MB
+brahma-webui                                         1781447132560   015a9e56594d   40 minutes ago      451MB
+brahma-webui                                         latest          c3d8ad221a2e   About an hour ago   451MB
+brahma-webui                                         13-c4aed77      5fbcb67d3bbd   3 hours ago         451MB
+localhost:5000/brahma-webui                          12-a6430a9      9ef26b2d0d18   3 hours ago         451MB
+brahma-webui                                         11-ab5aa9f      03441bf239b3   3 hours ago         451MB
+brahma-webui                                         10-8816185      5ef9926724dd   4 hours ago         451MB
+brahma-webui                                         9-510b857       0ff082ae7209   24 hours ago        451MB
+brahma-webui                                         8-510b857       ef2a2e306614   24 hours ago        451MB
+brahma-webui                                         7-c6eaab8       dabf127c7158   25 hours ago        451MB
 
-# 3. Проверь, что под пересоздался
-kubectl get pods -l app=brahma-webui
+# 3. Удали проблемный под (Kubernetes создаст новый с правильным образом)
+kubectl delete pod brahma-webui-747dfddc8f-92x9g
 
-# 4. Проверь время создания (должно быть сейчас)
-kubectl get pod -l app=brahma-webui -o jsonpath='{.items[0].metadata.creationTimestamp}'
+//////////
+# Удали все образы brahma-webui
+docker rmi $(docker images | grep brahma-webui | awk '{print $3}') -f
 
-# 5. Проверь содержимое
-kubectl exec -it $(kubectl get pod -l app=brahma-webui -o jsonpath='{.items[0].metadata.name}') -- \
-  cat /app/templates/index.html | grep "Welcome to Brahma"
+# Проверь
+docker images | grep brahma-webui
