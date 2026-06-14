@@ -28,9 +28,10 @@ pipeline {
                 script {
                     def image = "${APP_NAME}:latest"
                     dir('brahma-webui') {
-                        // Собираем с тегом latest
                         sh "docker build -t ${image} ."
-                        // Загружаем в Minikube
+                        // Удаляем старый образ из Minikube
+                        sh "minikube ssh -- docker rmi ${image} 2>/dev/null || true"
+                        // Загружаем новый образ
                         sh "minikube image load ${image}"
                     }
                 }
