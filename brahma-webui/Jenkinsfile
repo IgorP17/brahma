@@ -38,23 +38,17 @@ pipeline {
         stage('Deploy to K8s') {
             steps {
                 script {
-                    // Если у вас папка k8s лежит внутри brahma-webui,
-                    // раскомментируйте строку ниже:
-                    // dir('brahma-webui') {
-
-                    // Если k8s/brahma-webui.yaml в корне проекта, оставьте как есть:
                     sh """
-                        // 1. Применяем манифесты (создаем/обновляем ресурсы)
+                        # 1. Применяем манифесты
                         kubectl apply -f k8s/brahma-webui.yaml -n ${K8S_NAMESPACE}
 
-                        // 2. ДЕЛАЕМ РЕСТАРТ! Это ключевое действие для тега latest.
-                        // Без этого K8s не подтянет новый образ, если тег не изменился.
+                        # 2. Делаем рестарт. Это ключевое действие для тега latest.
+                        # Без этого K8s не подтянет новый образ, если тег не изменился.
                         kubectl rollout restart deployment/${APP_NAME} -n ${K8S_NAMESPACE}
 
-                        // 3. Ждем завершения обновления (замена вашего sleep 30)
+                        # 3. Ждем завершения обновления
                         kubectl rollout status deployment/${APP_NAME} -n ${K8S_NAMESPACE} --timeout=120s
                     """
-                    // } // закрывающая скобка dir, если использовали
                 }
             }
         }
@@ -62,28 +56,25 @@ pipeline {
         stage('Verify') {
             steps {
                 script {
-                    // Получаем IP-адрес Minikube динамически (надежнее, чем хардкодить 'minikube')
                     def minikubeIp = sh(script: 'minikube ip', returnStdout: true).trim()
 
-                    echo "⏳ Проверяем доступность приложения по адресу http://${minikubeIp}:30082..."
+                    echo "Waiting for app at http://${minikubeIp}:30082..."
 
-                    // Пробуем несколько раз
-                    sh """
+                    sh '''
                         for i in 1 2 3 4 5; do
-                            echo "Попытка \$i/5..."
-                            if curl -sf http://${minikubeIp}:30082 > /dev/null 2>&1; then
-                                echo "✅ Приложение отвечает!"
+                            echo "Attempt $i/5..."
+                            if curl -sf http://''' + minikubeIp + ''':30082 > /dev/null 2>&1; then
+                                echo "App is responding!"
                                 exit 0
                             fi
                             sleep 10
                         done
-                        echo "❌ Приложение не отвечает после 5 попыток"
+                        echo "App did not respond after 5 attempts"
                         exit 1
-                    """
+                    '''
                 }
             }
         }
-    }
 
     post {
         success {
