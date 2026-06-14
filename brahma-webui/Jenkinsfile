@@ -18,7 +18,8 @@ pipeline {
             steps {
                 sh 'mvn clean install -DskipTests'
                 dir('brahma-webui') {
-                    sh 'mvn package -Dquarkus.package.jar.type=uber-jar -DskipTests'
+                    // ВАЖНО: добавляем clean!
+                    sh 'mvn clean package -Dquarkus.package.jar.type=uber-jar -DskipTests'
                 }
             }
         }
@@ -28,10 +29,9 @@ pipeline {
                 script {
                     def image = "${APP_NAME}:latest"
                     dir('brahma-webui') {
-                        sh "docker build -t ${image} ."
-                        // Удаляем старый образ из Minikube
+                        // Добавляем --no-cache, чтобы Docker не кэшировал слои
+                        sh "docker build --no-cache -t ${image} ."
                         sh "minikube ssh -- docker rmi ${image} 2>/dev/null || true"
-                        // Загружаем новый образ
                         sh "minikube image load ${image}"
                     }
                 }
