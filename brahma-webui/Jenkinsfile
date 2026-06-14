@@ -26,10 +26,11 @@ pipeline {
         stage('Docker Build & Load') {
             steps {
                 script {
-                    // Используем тег latest вместо уникального
                     def image = "${APP_NAME}:latest"
                     dir('brahma-webui') {
+                        // Собираем с тегом latest
                         sh "docker build -t ${image} ."
+                        // Загружаем в Minikube
                         sh "minikube image load ${image}"
                     }
                 }
@@ -59,7 +60,7 @@ pipeline {
 
     post {
         success {
-            echo "✅ ${APP_NAME} успешно задеплоен с тегом ${IMAGE_TAG}"
+            echo "✅ ${APP_NAME} успешно задеплоен"
         }
         failure {
             echo "❌ Деплой ${APP_NAME} провален. Проверь логи."
