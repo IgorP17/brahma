@@ -49,12 +49,12 @@ pipeline {
                 script {
                     def minikubeIp = sh(script: 'minikube ip', returnStdout: true).trim()
 
-                    echo "Waiting for gateway at http://${minikubeIp}:30080..."
+                    echo "Waiting for gateway at http://${minikubeIp}:30880..."
 
                     sh """
                         for i in 1 2 3 4 5; do
                             echo "Attempt \$i/5..."
-                            if curl -sf http://${minikubeIp}:30080/q/health/live > /dev/null 2>&1; then
+                            if curl -sf http://${minikubeIp}:30880/q/health/live > /dev/null 2>&1; then
                                 echo "Gateway is responding!"
                                 exit 0
                             fi
