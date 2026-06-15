@@ -26,8 +26,9 @@ pipeline {
                 script {
                     def image = "${APP_NAME}:${IMAGE_TAG}"
                     dir('brahma-webui') {
-                        sh "docker build -t ${image} ."
-                        sh "minikube image load ${image}"
+                        // МАГИЯ: Переключаем Docker клиента на внутренний демон Minikube
+                        // и сразу собираем образ там! minikube image load больше не нужен!
+                        sh "eval \$(minikube docker-env) && docker build -t ${image} ."
                     }
                 }
             }

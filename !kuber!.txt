@@ -11,6 +11,9 @@ kubectl apply -f k8s/brahma-webui.yaml
 # перезапустить под
 kubectl rollout restart deployment/brahma-webui
 
+# откатить под
+kubectl rollout undo deployment/brahma-webui -n default
+
  Решение 1: Автозапуск Minikube при старте системы
 sudo tee /etc/systemd/system/minikube.service << 'EOF'
 [Unit]
