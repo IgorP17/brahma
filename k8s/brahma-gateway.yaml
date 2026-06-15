@@ -20,20 +20,11 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
-          env:
-            # Переопределяем URL БД, чтобы идти на хост-машину
-#            - name: QUARKUS_DATASOURCE_JDBC_URL
-#              value: "jdbc:postgresql://host.minikube.internal:5432/brahma"
-            # Если у вас Кафка тоже на хосте, раскомментируйте и поправьте:
-#            - name: KAFKA_BOOTSTRAP_SERVERS
-#              value: "host.minikube.internal:9092"
-
-            # Если у вас есть ConfigMap/Secret с другими настройками, добавьте их сюда
-             envFrom:
-               - configMapRef:
-                   name: brahma-config
-               - secretRef:
-                   name: brahma-secret
+          envFrom:
+            - configMapRef:
+                name: brahma-config
+            - secretRef:
+                name: brahma-secret
 
 ---
 apiVersion: v1
@@ -47,4 +38,4 @@ spec:
   ports:
     - port: 8080
       targetPort: 8080
-      nodePort: 30080 # Выдаем порт 30080 для доступа с хоста
+      nodePort: 30880

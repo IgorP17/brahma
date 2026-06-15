@@ -5,4 +5,4 @@ metadata:
 data:
   QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://host.minikube.internal:5432/brahma
   KAFKA_BOOTSTRAP_SERVERS: host.minikube.internal:9092
-  QUARKUS_HTTP_CORS_ORIGINS: "http://minikube:30082"
+  QUARKUS_HTTP_CORS_ORIGINS: "http://minikube:30882"

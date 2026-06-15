@@ -13,7 +13,7 @@ spec:
       protocol: TCP
       port: 8082
       targetPort: 8082
-      nodePort: 30082 # сюда ходи http://minikube:30082/
+      nodePort: 30882 # сюда ходи http://minikube:30882/
 ---
 apiVersion: apps/v1
 kind: Deployment
