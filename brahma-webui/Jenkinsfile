@@ -58,12 +58,12 @@ pipeline {
                 script {
                     def minikubeIp = sh(script: 'minikube ip', returnStdout: true).trim()
 
-                    echo "Waiting for app at http://${minikubeIp}:30082..."
+                    echo "Waiting for app at http://${minikubeIp}:30882..."
 
                     sh """
                         for i in 1 2 3 4 5; do
                             echo "Attempt \$i/5..."
-                            if curl -sf http://${minikubeIp}:30082 > /dev/null 2>&1; then
+                            if curl -sf http://${minikubeIp}:30882 > /dev/null 2>&1; then
                                 echo "App is responding!"
                                 exit 0
                             fi
