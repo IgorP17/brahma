@@ -1,0 +1,79 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = 'brahma-gateway'
+        K8S_NAMESPACE = 'default'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Maven Build') {
+            steps {
+                sh 'mvn clean install -DskipTests -Dquarkus.package.jar.type=uber-jar'
+            }
+        }
+
+        stage('Docker Build & Load') {
+            steps {
+                script {
+                    def image = "${APP_NAME}:${IMAGE_TAG}"
+                    dir('brahma-gateway') {
+                        sh "eval \$(minikube docker-env) && docker build -t ${image} ."
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to K8s') {
+            steps {
+                script {
+                    def image = "${APP_NAME}:${IMAGE_TAG}"
+                    sh """
+                        kubectl apply -f k8s/brahma-gateway.yaml -n ${K8S_NAMESPACE}
+                        kubectl set image deployment/${APP_NAME} ${APP_NAME}=${image} -n ${K8S_NAMESPACE}
+                        kubectl rollout status deployment/${APP_NAME} -n ${K8S_NAMESPACE} --timeout=120s
+                    """
+                }
+            }
+        }
+
+        stage('Verify') {
+            steps {
+                script {
+                    def minikubeIp = sh(script: 'minikube ip', returnStdout: true).trim()
+
+                    echo "Waiting for gateway at http://${minikubeIp}:30080..."
+
+                    sh """
+                        for i in 1 2 3 4 5; do
+                            echo "Attempt \$i/5..."
+                            if curl -sf http://${minikubeIp}:30080/q/health/live > /dev/null 2>&1; then
+                                echo "Gateway is responding!"
+                                exit 0
+                            fi
+                            sleep 10
+                        done
+                        echo "Gateway did not respond after 5 attempts"
+                        exit 1
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ ${APP_NAME} версия ${IMAGE_TAG} успешно задеплоен"
+        }
+        failure {
+            echo "❌ Деплой ${APP_NAME} провален. Проверь логи."
+        }
+    }
+}

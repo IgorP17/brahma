@@ -44,7 +44,7 @@ spec:
                 name: brahma-secret
           env:
             - name: BACKEND_URL
-              value: "http://brahma-gateway:8080"  # ← ИСПРАВЛЕНО
+              value: "http://brahma-gateway:8080" # Используем внутренний DNS K8s!
           resources:
             requests:
               memory: "256Mi"
