@@ -7,6 +7,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import io.quarkus.qute.Template;
 import jakarta.enterprise.context.RequestScoped;
+import org.eclipse.microprofile.config.inject.ConfigProperty; // ← Добавили импорт
 import org.jboss.logging.Logger;
 
 @Path("/")
@@ -21,13 +22,19 @@ public class TerminalWebResource {
     @Inject
     Template index; // ← src/main/resources/templates/index.html
 
+    // ← Читаем переменную BACKEND_URL (возможно придет из YAML). Если её нет (локальный запуск), дефолтим на localhost:8080
+    @ConfigProperty(name = "BACKEND_URL", defaultValue = "http://localhost:8080")
+    String backendUrl;
+
     @GET
     @Produces(MediaType.TEXT_HTML)
     public String getIndex() {
+        log.infof("🔗 Using Backend URL: %s", backendUrl);
         log.info("🌐 HTTP REQUEST: GET /");
         return index
                 .data("message", "Welcome to Brahma WebUI!")
                 .data("terminals", java.util.Collections.emptyList())  // ← пустой список
+                .data("backendUrl", backendUrl) // ← Передаем URL в index.html
                 .render();
     }
 

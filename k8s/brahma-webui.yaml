@@ -44,7 +44,7 @@ spec:
                 name: brahma-secret
           env:
             - name: BACKEND_URL
-              value: "http://brahma-gateway:8080" # Используем внутренний DNS K8s!
+              value: "http://minikube:30880" # ← Браузер будет стучаться сюда!
           resources:
             requests:
               memory: "256Mi"
