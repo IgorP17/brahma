@@ -239,32 +239,42 @@
         e.preventDefault();
 
         const formData = new FormData(this);
-        const params = new URLSearchParams();
-        params.append('id', formData.get('id'));
-        params.append('model', formData.get('model'));
-        params.append('location', formData.get('location'));
+        const id = formData.get('id');
+        const model = formData.get('model');
+        const location = formData.get('location');
 
         const resultDiv = document.getElementById('register-result');
         resultDiv.style.display = 'block';
         resultDiv.textContent = 'Sending...';
         resultDiv.className = 'success';
 
+        // Формируем JSON, который ожидает GatewayResource (TerminalRegistration)
+        const payload = {
+            id: id,
+            data: {
+                model: model,
+                location: location
+            }
+        };
+
         try {
-            const response = await fetch('/regterminal', {
+            // Прямой запрос в Gateway (убедитесь, что порт 8080 совпадает с портом запущенного Gateway)
+            const response = await fetch('http://localhost:8080/api/register', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
+                    'Content-Type': 'application/json'
                 },
-                body: params.toString()
+                body: JSON.stringify(payload)
             });
 
-            const text = await response.text();
+            // Парсим JSON ответ от Gateway
+            const data = await response.json();
 
-            if (response.ok && text.includes('successfully')) {
-                resultDiv.textContent = '✅ ' + text.trim();
+            if (response.ok) {
+                resultDiv.textContent = '✅ Terminal ' + data.id + ' registered! Status: ' + data.status;
                 resultDiv.className = 'success';
             } else {
-                resultDiv.textContent = '❌ Registration failed: ' + (text || 'Unknown error');
+                resultDiv.textContent = '❌ Registration failed: ' + (data.error || 'Unknown error');
                 resultDiv.className = 'error';
             }
         } catch (err) {

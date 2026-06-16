@@ -1,7 +1,5 @@
 package com.example.webui.resource;
 
-import com.example.webui.client.GatewayClient;
-import com.example.webui.model.TerminalViewGateway;
 import com.example.webui.service.TerminalService;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -9,7 +7,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import io.quarkus.qute.Template;
 import jakarta.enterprise.context.RequestScoped;
-import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.logging.Logger;
 
 @Path("/")
@@ -23,10 +20,6 @@ public class TerminalWebResource {
 
     @Inject
     Template index; // ← src/main/resources/templates/index.html
-
-    @Inject
-    @RestClient
-    GatewayClient gatewayClient;
 
     @GET
     @Produces(MediaType.TEXT_HTML)
@@ -53,34 +46,6 @@ public class TerminalWebResource {
         log.infof("✅ Got info about terminal %s", id);
 
         return Response.ok(result).build();
-    }
-
-    @POST
-    @Path("/regterminal")
-    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response registerTerminalViaAjax(@FormParam("id") String id,
-                                            @FormParam("model") String model,
-                                            @FormParam("location") String location) {
-        log.infof("🌐 HTTP REQUEST: POST /register - Terminal ID: %s, Model: %s, Location: %s", id, model, location);
-        // Собираем JSON-объект
-        var request = new com.example.webui.client.TerminalRegistrationRequest();
-        request.id = id;
-        request.data = java.util.Map.of("model", model, "location", location);
-
-        try {
-            var response = gatewayClient.registerTerminal(request);
-            if (response.getStatus() == 200) {
-                log.infof("✅ Terminal %s registered successfully via web UI", id);
-                return Response.ok("Terminal " + id + " is successfully pending registration.").build();
-            } else {
-                log.warnf("⚠️ Terminal %s registration failed via web UI, gateway responded with status: %d", id, response.getStatus());
-                return Response.status(response.getStatus()).entity("Error registering terminal").build();
-            }
-        } catch (Exception e) {
-            log.errorf("❌ Internal error during registration of terminal %s: %s", id, e.getMessage(), e);
-            return Response.status(500).entity("Internal error: " + e.getMessage()).build();
-        }
     }
 
     // === Удаление терминала ===
