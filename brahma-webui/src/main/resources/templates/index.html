@@ -262,7 +262,7 @@
 
     try {
         // Прямой запрос в Gateway (убедитесь, что порт 8080 совпадает с портом запущенного Gateway)
-        const response = await fetch(`${GATEWAY_BASE_URL}/api/register`, {
+            const response = await fetch(GATEWAY_BASE_URL + '/api/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -300,7 +300,7 @@ document.getElementById('register-grpc-form').addEventListener('submit', async f
     resultDiv.className = 'info'; // Можно добавить CSS класс для "info"
 
     try {
-        const response = await fetch(`${GATEWAY_BASE_URL}/api/register-grpc`, {
+            const response = await fetch(GATEWAY_BASE_URL + '/api/register-grpc', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
