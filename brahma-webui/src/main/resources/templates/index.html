@@ -235,199 +235,202 @@
 </table>
 
 <script>
+    // Эта переменная подставится из Quarkus (Qute-шаблонизатором)
+    const GATEWAY_BASE_URL = '{backendUrl}';
+
     document.getElementById('register-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
+    e.preventDefault();
 
-        const formData = new FormData(this);
-        const id = formData.get('id');
-        const model = formData.get('model');
-        const location = formData.get('location');
+    const formData = new FormData(this);
+    const id = formData.get('id');
+    const model = formData.get('model');
+    const location = formData.get('location');
 
-        const resultDiv = document.getElementById('register-result');
-        resultDiv.style.display = 'block';
-        resultDiv.textContent = 'Sending...';
-        resultDiv.className = 'success';
+    const resultDiv = document.getElementById('register-result');
+    resultDiv.style.display = 'block';
+    resultDiv.textContent = 'Sending...';
+    resultDiv.className = 'success';
 
-        // Формируем JSON, который ожидает GatewayResource (TerminalRegistration)
-        const payload = {
-            id: id,
-            data: {
-                model: model,
-                location: location
-            }
-        };
+    // Формируем JSON, который ожидает GatewayResource (TerminalRegistration)
+    const payload = {
+        id: id,
+        data: {
+            model: model,
+            location: location
+        }
+    };
 
-        try {
-            // Прямой запрос в Gateway (убедитесь, что порт 8080 совпадает с портом запущенного Gateway)
-            const response = await fetch('http://localhost:8080/api/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+    try {
+        // Прямой запрос в Gateway (убедитесь, что порт 8080 совпадает с портом запущенного Gateway)
+        const response = await fetch(`${GATEWAY_BASE_URL}/api/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
 
-            // Парсим JSON ответ от Gateway
-            const data = await response.json();
+        // Парсим JSON ответ от Gateway
+        const data = await response.json();
 
-            if (response.ok) {
-                resultDiv.textContent = '✅ Terminal ' + data.id + ' registered! Status: ' + data.status;
-                resultDiv.className = 'success';
-            } else {
-                resultDiv.textContent = '❌ Registration failed: ' + (data.error || 'Unknown error');
-                resultDiv.className = 'error';
-            }
-        } catch (err) {
-            resultDiv.textContent = '❌ Network error: ' + err.message;
+        if (response.ok) {
+            resultDiv.textContent = '✅ Terminal ' + data.id + ' registered! Status: ' + data.status;
+            resultDiv.className = 'success';
+        } else {
+            resultDiv.textContent = '❌ Registration failed: ' + (data.error || 'Unknown error');
             resultDiv.className = 'error';
         }
-    });
+    } catch (err) {
+        resultDiv.textContent = '❌ Network error: ' + err.message;
+        resultDiv.className = 'error';
+    }
+});
 
-    document.getElementById('register-grpc-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        const params = new URLSearchParams();
-        params.append('id', formData.get('id'));
-        params.append('model', formData.get('model'));
-        params.append('location', formData.get('location'));
+document.getElementById('register-grpc-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const params = new URLSearchParams();
+    params.append('id', formData.get('id'));
+    params.append('model', formData.get('model'));
+    params.append('location', formData.get('location'));
 
-        const resultDiv = document.getElementById('grpc-result');
-        resultDiv.style.display = 'block';
-        resultDiv.textContent = 'Sending...';
-        resultDiv.className = 'info'; // Можно добавить CSS класс для "info"
+    const resultDiv = document.getElementById('grpc-result');
+    resultDiv.style.display = 'block';
+    resultDiv.textContent = 'Sending...';
+    resultDiv.className = 'info'; // Можно добавить CSS класс для "info"
 
-        try {
-            const response = await fetch('http://localhost:8080/api/register-grpc', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: params.toString()
-            });
+    try {
+        const response = await fetch(`${GATEWAY_BASE_URL}/api/register-grpc`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: params.toString()
+        });
 
-            const text = await response.text();
-            if (response.ok) {
-                resultDiv.textContent = '✅ ' + text;
-                resultDiv.className = 'success';
-            } else {
-                resultDiv.textContent = '❌ ' + text;
-                resultDiv.className = 'error';
-            }
-        } catch (err) {
-            resultDiv.textContent = '❌ Network error: ' + err.message;
+        const text = await response.text();
+        if (response.ok) {
+            resultDiv.textContent = '✅ ' + text;
+            resultDiv.className = 'success';
+        } else {
+            resultDiv.textContent = '❌ ' + text;
             resultDiv.className = 'error';
         }
-    });
+    } catch (err) {
+        resultDiv.textContent = '❌ Network error: ' + err.message;
+        resultDiv.className = 'error';
+    }
+});
 
-    function searchTerminal() {
-        const id = document.getElementById('search-id').value.trim();
-        if (!id) {
-            alert('Please enter a Terminal ID');
-            return;
-        }
+function searchTerminal() {
+    const id = document.getElementById('search-id').value.trim();
+    if (!id) {
+        alert('Please enter a Terminal ID');
+        return;
+    }
 
-        fetch('/terminal/' + id)
-            .then(res => {
-                if (res.ok) {
-                    return res.json();
-                } else if (res.status === 404) {
-                    alert('Terminal not found');
-                    return null;
+    fetch('/terminal/' + id)
+        .then(res => {
+            if (res.ok) {
+                return res.json();
+            } else if (res.status === 404) {
+                alert('Terminal not found');
+                return null;
+            } else {
+                throw new Error('Network response was not ok');
+            }
+        })
+        .then(data => {
+            const tbodyGateway = document.getElementById('gateway-terminals-table');
+            const tbodyProcessor = document.getElementById('processor-terminals-table');
+
+            tbodyGateway.innerHTML = '';
+            tbodyProcessor.innerHTML = '';
+
+                // Gateway
+                if (data.gateway) {
+                    const rowG = document.createElement('tr');
+                    rowG.innerHTML = '<td>' + data.gateway.id + '</td>' +
+                                     '<td>' + data.gateway.model + '</td>' +
+                                     '<td>' + data.gateway.location + '</td>' +
+                                     '<td>' + data.gateway.status + '</td>' +
+                                     '<td>' + (data.gateway.source || 'N/A') + '</td>' +
+                                     '<td>' + (data.gateway.receivedAt || 'N/A') + '</td>' +
+                                     '<td>' + data.gateway.createdAt + '</td>' +
+                                     '<td>' + data.gateway.updatedAt + '</td>';
+                    tbodyGateway.appendChild(rowG);
                 } else {
-                    throw new Error('Network response was not ok');
+                    tbodyGateway.innerHTML = '<tr><td colspan="6">Not found in gateway</td></tr>';
+                }
+
+                // Processor
+                if (data.processor) {
+                    const rowP = document.createElement('tr');
+                    rowP.innerHTML = '<td>' + data.processor.id + '</td>' +
+                                     '<td>' + data.processor.model + '</td>' +
+                                     '<td>' + data.processor.location + '</td>' +
+                                     '<td>' + data.processor.status + '</td>' +
+                                     '<td>' + (data.processor.source || 'N/A') + '</td>' +
+                                     '<td>' + (data.processor.receivedAt || 'N/A') + '</td>' +
+                                     '<td>' + data.processor.createdAt + '</td>' +
+                                     '<td>' + data.processor.updatedAt + '</td>';
+                    tbodyProcessor.appendChild(rowP);
+                } else {
+                    tbodyProcessor.innerHTML = '<tr><td colspan="6">Not found in processor</td></tr>';
                 }
             })
-            .then(data => {
-                const tbodyGateway = document.getElementById('gateway-terminals-table');
-                const tbodyProcessor = document.getElementById('processor-terminals-table');
+            .catch(err => console.error('Error:', err));
+    }
 
-                tbodyGateway.innerHTML = '';
-                tbodyProcessor.innerHTML = '';
+// ✅ Вот эта функция должна быть — и только она
+async function deleteTerminal(scope) {
+    const id = document.getElementById('delete-id').value.trim();
+    if (!id) {
+        alert('Please enter a Terminal ID');
+        return;
+    }
 
-                    // Gateway
-                    if (data.gateway) {
-                        const rowG = document.createElement('tr');
-                        rowG.innerHTML = '<td>' + data.gateway.id + '</td>' +
-                                         '<td>' + data.gateway.model + '</td>' +
-                                         '<td>' + data.gateway.location + '</td>' +
-                                         '<td>' + data.gateway.status + '</td>' +
-                                         '<td>' + (data.gateway.source || 'N/A') + '</td>' +
-                                         '<td>' + (data.gateway.receivedAt || 'N/A') + '</td>' +
-                                         '<td>' + data.gateway.createdAt + '</td>' +
-                                         '<td>' + data.gateway.updatedAt + '</td>';
-                        tbodyGateway.appendChild(rowG);
-                    } else {
-                        tbodyGateway.innerHTML = '<tr><td colspan="6">Not found in gateway</td></tr>';
-                    }
+    const resultDiv = document.getElementById('delete-result');
+    resultDiv.style.display = 'block';
+    resultDiv.textContent = 'Deleting...';
+    resultDiv.className = 'success';
 
-                    // Processor
-                    if (data.processor) {
-                        const rowP = document.createElement('tr');
-                        rowP.innerHTML = '<td>' + data.processor.id + '</td>' +
-                                         '<td>' + data.processor.model + '</td>' +
-                                         '<td>' + data.processor.location + '</td>' +
-                                         '<td>' + data.processor.status + '</td>' +
-                                         '<td>' + (data.processor.source || 'N/A') + '</td>' +
-                                         '<td>' + (data.processor.receivedAt || 'N/A') + '</td>' +
-                                         '<td>' + data.processor.createdAt + '</td>' +
-                                         '<td>' + data.processor.updatedAt + '</td>';
-                        tbodyProcessor.appendChild(rowP);
-                    } else {
-                        tbodyProcessor.innerHTML = '<tr><td colspan="6">Not found in processor</td></tr>';
-                    }
-                })
-                .catch(err => console.error('Error:', err));
-        }
-
-    // ✅ Вот эта функция должна быть — и только она
-    async function deleteTerminal(scope) {
-        const id = document.getElementById('delete-id').value.trim();
-        if (!id) {
-            alert('Please enter a Terminal ID');
+    let endpoint;
+    switch(scope) {
+        case 'gateway':
+            endpoint = '/terminal/' + encodeURIComponent(id) + '/gateway';
+            break;
+        case 'processor':
+            endpoint = '/terminal/' + encodeURIComponent(id) + '/processor';
+            break;
+        case 'both':
+            endpoint = '/terminal/' + encodeURIComponent(id);
+            break;
+        default:
+            resultDiv.textContent = '❌ Invalid scope';
+            resultDiv.className = 'error';
             return;
-        }
+    }
 
-        const resultDiv = document.getElementById('delete-result');
-        resultDiv.style.display = 'block';
-        resultDiv.textContent = 'Deleting...';
-        resultDiv.className = 'success';
+    try {
+        const response = await fetch(endpoint, {
+            method: 'DELETE'
+        });
 
-        let endpoint;
-        switch(scope) {
-            case 'gateway':
-                endpoint = '/terminal/' + encodeURIComponent(id) + '/gateway';
-                break;
-            case 'processor':
-                endpoint = '/terminal/' + encodeURIComponent(id) + '/processor';
-                break;
-            case 'both':
-                endpoint = '/terminal/' + encodeURIComponent(id);
-                break;
-            default:
-                resultDiv.textContent = '❌ Invalid scope';
-                resultDiv.className = 'error';
-                return;
-        }
+        const text = await response.text();
 
-        try {
-            const response = await fetch(endpoint, {
-                method: 'DELETE'
-            });
-
-            const text = await response.text();
-
-            if (response.ok) {
-                resultDiv.textContent = '✅ Terminal ' + id + ' deleted from ' + scope;
-                resultDiv.className = 'success';
-            } else {
-                resultDiv.textContent = '❌ Delete failed: ' + response.status + ' ' + (text || 'Unknown error');
-                resultDiv.className = 'error';
-            }
-        } catch (err) {
-            resultDiv.textContent = '❌ Network error: ' + err.message;
+        if (response.ok) {
+            resultDiv.textContent = '✅ Terminal ' + id + ' deleted from ' + scope;
+            resultDiv.className = 'success';
+        } else {
+            resultDiv.textContent = '❌ Delete failed: ' + response.status + ' ' + (text || 'Unknown error');
             resultDiv.className = 'error';
         }
+    } catch (err) {
+        resultDiv.textContent = '❌ Network error: ' + err.message;
+        resultDiv.className = 'error';
     }
+}
 </script>
 </body>
 </html>
