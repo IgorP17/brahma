@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: brahma-processor
+  labels:
+    app: brahma-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: brahma-processor
+  template:
+    metadata:
+      labels:
+        app: brahma-processor
+    spec:
+      containers:
+        - name: brahma-processor
+          image: brahma-processor:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8081
+            - name: grpc
+              containerPort: 9000
+          envFrom:
+            - configMapRef:
+                name: brahma-config
+            - secretRef:
+                name: brahma-secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: brahma-processor
+spec:
+  type: ClusterIP
+  selector:
+    app: brahma-processor
+  ports:
+    - name: http
+      port: 8081
+      targetPort: 8081
+    - name: grpc
+      port: 9000
+      targetPort: 9000

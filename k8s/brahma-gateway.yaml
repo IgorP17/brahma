@@ -25,6 +25,12 @@ spec:
                 name: brahma-config
             - secretRef:
                 name: brahma-secret
+          # для GRPC
+          env:
+            - name: PROCESSOR_HOST
+              value: "brahma-processor"
+            - name: PROCESSOR_PORT
+              value: "9000"
 
 ---
 apiVersion: v1
