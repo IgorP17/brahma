@@ -1,4 +1,4 @@
-kubectl get pods -l app=brahma-webui
+command for logs
 
 kubectl get svc brahma-webui
 
@@ -11,6 +11,10 @@ minikube ip - и в /etc/hosts
 
 # логи
 kubectl logs -l app=brahma-webui -f
+
+kubectl logs -f -l app=brahma-webui
+kubectl logs -f -l app=brahma-gateway
+kubectl logs -f -l app=brahma-processor
 
 # применить
 kubectl apply -f k8s/brahma-webui.yaml
