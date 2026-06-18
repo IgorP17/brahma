@@ -2,6 +2,9 @@ kubectl get pods -l app=brahma-webui
 
 kubectl get svc brahma-webui
 
+igor@igor-VirtualBox:~$ kubectl get svc brahma-processor
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
+brahma-processor   ClusterIP   10.111.12.108   <none>        8081/TCP,9000/TCP   24h
 
 ###### хост добавить
 minikube ip - и в /etc/hosts
