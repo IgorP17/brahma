@@ -1,4 +1,4 @@
-command for logs
+kubectl get pods -l app=brahma-webui
 
 kubectl get svc brahma-webui
 
