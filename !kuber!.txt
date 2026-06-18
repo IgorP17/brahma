@@ -7,6 +7,28 @@ kubectl get svc brahma-webui
 minikube ip - и в /etc/hosts
 
 192.168.49.2    minikube
+127.0.0.1       host.minikube.internal
+!!!!!!!!!!!!!!!!!!!!!!!!!
+Вариант А: Вы скачали архив Kafka (tar.gz) и запускаете через скрипты
+
+    Найдите папку, куда вы распаковали Kafka (например, ~/kafka_2.13-3.7.0).
+    Зайдите в папку config и откройте файл server.properties в любом редакторе.
+    Найдите строку advertised.listeners= (скорее всего, она закомментирована # или там написано localhost).
+    Сделайте её такой:
+
+advertised.listeners=PLAINTEXT://host.minikube.internal:9092,CONTROLLER://localhost:9093
+
+ ПРОСТО РУБУТ
+Как перезапустить:
+
+     Найдите процесс Kafka (ps aux | grep kafka) и убейте его (kill -9 <PID>), либо просто закройте терминал, где он запущен (и терминал с Zookeeper, если он у вас отдельный).
+     Запустите заново:
+
+     # в одном терминале (если нужен zookeeper)
+     bin/zookeeper-server-start.sh config/zookeeper.properties
+     # в другом терминале
+     bin/kafka-server-start.sh config/server.properties
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 # логи
