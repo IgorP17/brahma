@@ -22,6 +22,10 @@ kubectl apply -f k8s/brahma-webui.yaml
 # перезапустить под
 kubectl rollout restart deployment/brahma-webui
 
+# Перезапускаем поды, чтобы они вытянули свежие образы (если тег latest не обновился)
+kubectl rollout restart deployment brahma-gateway
+kubectl rollout restart deployment brahma-processor
+
 # откатить под
 kubectl rollout undo deployment/brahma-webui -n default
 
