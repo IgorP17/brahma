@@ -37,7 +37,6 @@ pipeline {
             }
         }
 
-        // ... (здесь остаются стадии Deploy WebUI, Gateway, Processor без изменений) ...
         stage('Deploy WebUI') {
             when { expression { params.DEPLOY_WEBUI } }
             steps {
@@ -61,7 +60,7 @@ pipeline {
                                 echo "WebUI is responding!"
                                 exit 0
                             fi
-                            sleep 10
+                            sleep 15
                         done
                         echo "WebUI did not respond after 5 attempts"
                         exit 1
@@ -93,7 +92,7 @@ pipeline {
                                 echo "Gateway is responding!"
                                 exit 0
                             fi
-                            sleep 10
+                            sleep 15
                         done
                         echo "Gateway did not respond after 5 attempts"
                         exit 1
@@ -125,7 +124,7 @@ pipeline {
                                 echo "${app} is Running and Ready!"
                                 exit 0
                             fi
-                            sleep 10
+                            sleep 15
                         done
                         echo "${app} did not become ready after 5 attempts"
                         exit 1
@@ -138,8 +137,15 @@ pipeline {
     post {
         always {
             script {
+                // 1. Чистим рабочую папку Jenkins (исходники, target/, .jar)
+                echo "🧹 Cleaning Jenkins workspace..."
+                cleanWs()
+
+                // 2. Чистим старые Docker-образы в Minikube (теперь без фильтра по времени)
                 echo "🧹 Cleaning up unused Docker images in Minikube..."
-                sh 'eval $(minikube docker-env) && docker image prune -a -f --filter "until=1h"'
+                sh 'eval $(minikube docker-env) && docker image prune -a -f'
+
+                // 3. Чистим кэш сборщика Docker
                 sh 'eval $(minikube docker-env) && docker builder prune -f'
             }
         }
