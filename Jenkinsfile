@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     parameters {
-        booleanParam(name: 'DEPLOY_WEBUI',     defaultValue: false, description: 'Собрать и задеплоить WebUI')
-        booleanParam(name: 'DEPLOY_GATEWAY',   defaultValue: false, description: 'Собрать и задеплоить Gateway')
-        booleanParam(name: 'DEPLOY_PROCESSOR', defaultValue: false, description: 'Собрать и задеплоить Processor')
+        booleanParam(name: 'DEPLOY_WEBUI',          defaultValue: false, description: 'Собрать и задеплоить WebUI')
+        booleanParam(name: 'DEPLOY_GATEWAY',        defaultValue: false, description: 'Собрать и задеплоить Gateway')
+        booleanParam(name: 'DEPLOY_PROCESSOR',      defaultValue: false, description: 'Собрать и задеплоить Processor')
+        booleanParam(name: 'CLEAN_MAVEN_CACHE',     defaultValue: false, description: '⚡ Фигачить кэш Maven (.m2/repository) перед сборкой')
     }
 
     environment {
         K8S_NAMESPACE = 'default'
-        // МАГИЯ ЗДЕСЬ: Берем номер текущей сборки Jenkins как тег
         IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
 
@@ -20,7 +20,14 @@ pipeline {
             }
         }
 
-        // Собираем все модули сразу, если выбрана хотя бы одна галочка
+        stage('Clean Maven Cache') {
+            when { expression { params.CLEAN_MAVEN_CACHE } }
+            steps {
+                echo "🧹 Фигачим кэш Maven..."
+                sh 'rm -rf ~/.m2/repository/*'
+            }
+        }
+
         stage('Maven Build') {
             when {
                 expression { params.DEPLOY_WEBUI || params.DEPLOY_GATEWAY || params.DEPLOY_PROCESSOR }
@@ -30,27 +37,22 @@ pipeline {
             }
         }
 
-        // ================== WEBUI ==================
+        // ... (здесь остаются стадии Deploy WebUI, Gateway, Processor без изменений) ...
         stage('Deploy WebUI') {
             when { expression { params.DEPLOY_WEBUI } }
             steps {
                 script {
                     def app = 'brahma-webui'
                     def image = "${app}:${IMAGE_TAG}"
-
                     echo "🚀 Building and deploying ${app}..."
-
                     dir('brahma-webui') {
                         sh "eval \$(minikube docker-env) && docker build -t ${image} ."
                     }
-
                     sh """
                         kubectl apply -f k8s/brahma-webui.yaml -n ${K8S_NAMESPACE}
                         kubectl set image deployment/${app} ${app}=${image} -n ${K8S_NAMESPACE}
                         kubectl rollout status deployment/${app} -n ${K8S_NAMESPACE} --timeout=120s
                     """
-
-                    // Verify WebUI
                     def minikubeIp = sh(script: 'minikube ip', returnStdout: true).trim()
                     sh """
                         for i in 1 2 3 4 5; do
@@ -68,27 +70,21 @@ pipeline {
             }
         }
 
-        // ================== GATEWAY ==================
         stage('Deploy Gateway') {
             when { expression { params.DEPLOY_GATEWAY } }
             steps {
                 script {
                     def app = 'brahma-gateway'
                     def image = "${app}:${IMAGE_TAG}"
-
                     echo "🚀 Building and deploying ${app}..."
-
                     dir('brahma-gateway') {
                         sh "eval \$(minikube docker-env) && docker build -t ${image} ."
                     }
-
                     sh """
                         kubectl apply -f k8s/brahma-gateway.yaml -n ${K8S_NAMESPACE}
                         kubectl set image deployment/${app} ${app}=${image} -n ${K8S_NAMESPACE}
                         kubectl rollout status deployment/${app} -n ${K8S_NAMESPACE} --timeout=120s
                     """
-
-                    // Verify Gateway
                     def minikubeIp = sh(script: 'minikube ip', returnStdout: true).trim()
                     sh """
                         for i in 1 2 3 4 5; do
@@ -106,27 +102,21 @@ pipeline {
             }
         }
 
-        // ================== PROCESSOR ==================
         stage('Deploy Processor') {
             when { expression { params.DEPLOY_PROCESSOR } }
             steps {
                 script {
                     def app = 'brahma-processor'
                     def image = "${app}:${IMAGE_TAG}"
-
                     echo "🚀 Building and deploying ${app}..."
-
                     dir('brahma-processor') {
                         sh "eval \$(minikube docker-env) && docker build -t ${image} ."
                     }
-
                     sh """
                         kubectl apply -f k8s/brahma-processor.yaml -n ${K8S_NAMESPACE}
                         kubectl set image deployment/${app} ${app}=${image} -n ${K8S_NAMESPACE}
                         kubectl rollout status deployment/${app} -n ${K8S_NAMESPACE} --timeout=120s
                     """
-
-                    // Verify Processor
                     echo "Waiting for ${app} pod to be ready..."
                     sh """
                         for i in 1 2 3 4 5; do
@@ -146,6 +136,13 @@ pipeline {
     }
 
     post {
+        always {
+            script {
+                echo "🧹 Cleaning up unused Docker images in Minikube..."
+                sh 'eval $(minikube docker-env) && docker image prune -a -f --filter "until=1h"'
+                sh 'eval $(minikube docker-env) && docker builder prune -f'
+            }
+        }
         success {
             script {
                 def deployed = []
