@@ -54,6 +54,18 @@ kubectl rollout restart deployment brahma-processor
 # откатить под
 kubectl rollout undo deployment/brahma-webui -n default
 
+---------------------------------------------------------------------------------------------------
+# список обраов - можно удалять !!!!!!!!!!!!!!!!
+# Переключаемся на Docker внутри Minikube
+eval $(minikube docker-env)
+
+# Смотрим, сколько образов накопилось
+docker images
+
+# Удаляем ВСЕ неиспользуемые образы (те, на которые не ссылается ни один работающий под), кэши и сети
+docker system prune -a -f --volumes
+
+---------------------------------------------------------------------------------------------------
  Решение 1: Автозапуск Minikube при старте системы
 sudo tee /etc/systemd/system/minikube.service << 'EOF'
 [Unit]
