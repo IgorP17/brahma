@@ -104,6 +104,28 @@ kubectl apply -f k8s/
 - Environment variables: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `KAFKA_BROKER`
 - See `application.properties` in each module's `src/main/resources/`
 
+## Prerequisites
+
+- **Java 21** — required for Quarkus
+- **Maven 3.8+** — build tool
+- **Node.js 20+** — for openspec (OpenAPI spec validation)
+- **Docker** — for building and running containers
+- **PostgreSQL** — database server
+- **Kafka** — message broker
+
+**Install Node.js via nvm:**
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+```
+
+**Install openspec:**
+```bash
+npm install -g @fission-ai/openspec
+```
+
 ## Kubernetes Deployment
 
 **Prerequisites:**
