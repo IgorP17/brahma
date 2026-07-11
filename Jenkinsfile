@@ -33,7 +33,16 @@ pipeline {
                 expression { params.DEPLOY_WEBUI || params.DEPLOY_GATEWAY || params.DEPLOY_PROCESSOR }
             }
             steps {
-                sh 'mvn clean install -DskipTests -Dquarkus.package.jar.type=uber-jar'
+                sh 'mvn clean install -Dquarkus.package.jar.type=uber-jar'
+            }
+        }
+
+        stage('Run Tests') {
+            when {
+                expression { params.DEPLOY_GATEWAY }
+            }
+            steps {
+                sh 'mvn test -pl brahma-gateway'
             }
         }
 

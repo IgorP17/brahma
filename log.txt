@@ -1,0 +1,45 @@
+igor@igor-VirtualBox:~/brahma/brahma-processor$ mvn quarkus:dev
+[INFO] Scanning for projects...
+[INFO]
+[INFO] --------------------< com.example:brahma-processor >--------------------
+[INFO] Building brahma-processor 1.0.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- quarkus:3.32.3:dev (default-cli) @ brahma-processor ---
+[INFO] Invoking resources:3.3.1:resources (default-resources) @ brahma-processor
+[INFO] Copying 2 resources from src/main/resources to target/classes
+[INFO] Invoking compiler:3.11.0:compile (default-compile) @ brahma-processor
+[INFO] Changes detected - recompiling the module! :input tree
+[INFO] Compiling 10 source files with javac [debug target 21] to target/classes
+[INFO] /home/igor/brahma/brahma-processor/src/main/java/com/example/processor/utils/JsonParser.java: /home/igor/brahma/brahma-processor/src/main/java/com/example/processor/utils/JsonParser.java uses unchecked or unsafe operations.
+[INFO] /home/igor/brahma/brahma-processor/src/main/java/com/example/processor/utils/JsonParser.java: Recompile with -Xlint:unchecked for details.
+[INFO] Invoking resources:3.3.1:testResources (default-testResources) @ brahma-processor
+[INFO] skip non existing resourceDirectory /home/igor/brahma/brahma-processor/src/test/resources
+[INFO] Invoking compiler:3.11.0:testCompile (default-testCompile) @ brahma-processor
+[INFO] Changes detected - recompiling the module! :dependency
+Listening for transport dt_socket at address: 5005
+2026-05-30 10:42:41.810 [build-5] INFO  deployment.processor --- Generating Jackson deserializer for type com.example.processor.message.TerminalRegistrationMessage
+2026-05-30 10:42:41.828 [build-5] INFO  deployment.processor --- Generating Jackson serializer for type com.example.processor.message.TerminalRegisteredMessage
+2026-05-30 10:42:49.181 [ForkJoinPool.commonPool-worker-1] INFO  deployment.DevServicesKafkaProcessor --- Dev Services for Kafka started. Other Quarkus applications in dev mode will find the broker automatically. For Quarkus applications in production mode, you can connect to this by starting your application with -Dkafka.bootstrap.servers=OUTSIDE://localhost:32778
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
+2026-05-30 10:42:52.109 [Quarkus Main Thread] INFO  core.FlywayExecutor --- Database: jdbc:postgresql://localhost:5432/brahma (PostgreSQL 16.13)
+2026-05-30 10:42:52.195 [Quarkus Main Thread] INFO  command.DbValidate --- Successfully validated 1 migration (execution time 00:00.036s)
+2026-05-30 10:42:52.274 [Quarkus Main Thread] INFO  command.DbMigrate --- Current version of schema "processor": 1
+2026-05-30 10:42:52.280 [Quarkus Main Thread] INFO  command.DbMigrate --- Schema "processor" is up to date. No migration necessary.
+2026-05-30 10:42:53.332 [Quarkus Main Thread] WARN  runtime.GrpcServerRecorder --- Using legacy gRPC support with a separate HTTP server instance. This is the current default to maintain compatibility.
+You can switch to the new unified HTTP server by setting quarkus.grpc.server.use-separate-server=false
+This change is recommended for new applications and will become the default in future versions.
+
+
+2026-05-30 10:42:53.685 [vert.x-eventloop-thread-0] INFO  runtime.GrpcServerRecorder --- Started gRPC server on 0.0.0.0:9000 [TLS enabled: false]
+2026-05-30 10:42:53.787 [Quarkus Main Thread] INFO  messaging.kafka --- SRMSG18229: Configured topics for channel 'registration-in': [terminal.registration]
+2026-05-30 10:42:53.816 [Quarkus Main Thread] INFO  messaging.kafka --- SRMSG18214: Key deserializer omitted, using String as default
+2026-05-30 10:42:54.382 [smallrye-kafka-producer-thread-0] INFO  messaging.kafka --- SRMSG18258: Kafka producer kafka-producer-registered-out, connected to Kafka brokers 'localhost:9092', is configured to write records to 'terminal.registered'
+2026-05-30 10:42:54.449 [smallrye-kafka-consumer-thread-0] INFO  messaging.kafka --- SRMSG18257: Kafka consumer kafka-consumer-registration-in, connected to Kafka brokers 'localhost:9092', belongs to the 'processor-registration-consumer-group' consumer group and is configured to poll records from [terminal.registration]
+2026-05-30 10:42:54.571 [Quarkus Main Thread] INFO  io.quarkus --- brahma-processor 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.32.3) started in 18.947s. Listening on: http://localhost:8081
+2026-05-30 10:42:54.573 [Quarkus Main Thread] INFO  io.quarkus --- Profile dev activated. Live Coding activated.
+2026-05-30 10:42:54.577 [Quarkus Main Thread] INFO  io.quarkus --- Installed features: [agroal, cdi, compose, flyway, grpc-client, grpc-server, hibernate-orm, hibernate-orm-panache, jdbc-postgresql, kafka-client, messaging, messaging-kafka, narayana-jta, rest, smallrye-context-propagation, smallrye-health, vertx]
