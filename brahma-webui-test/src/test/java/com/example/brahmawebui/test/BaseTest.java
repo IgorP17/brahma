@@ -15,7 +15,7 @@ public class BaseTest {
     void setUp() {
         // Настройка Selenide - используем "firefox" для автоматического драйвера
         Configuration.browser = "firefox";
-        Configuration.headless = false;
+        Configuration.headless = Boolean.getBoolean("selenide.headless");
         Configuration.timeout = TestConfig.DEFAULT_TIMEOUT;
         Configuration.pageLoadTimeout = TestConfig.DEFAULT_TIMEOUT;
         Configuration.pageLoadStrategy = "eager";
