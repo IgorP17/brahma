@@ -1,5 +1,8 @@
 minikube dashboard &
 
+minikube addons list
+minikube addons enable dashboard
+
 kubectl get pods -l app=brahma-webui
 
 kubectl get svc brahma-webui
