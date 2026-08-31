@@ -5,7 +5,8 @@ pipeline {
         booleanParam(name: 'DEPLOY_WEBUI',          defaultValue: false, description: 'Собрать и задеплоить WebUI')
         booleanParam(name: 'DEPLOY_GATEWAY',        defaultValue: false, description: 'Собрать и задеплоить Gateway')
         booleanParam(name: 'DEPLOY_PROCESSOR',      defaultValue: false, description: 'Собрать и задеплоить Processor')
-        booleanParam(name: 'CLEAN_MAVEN_CACHE',     defaultValue: false, description: '⚡ Фигачить кэш Maven (.m2/repository) перед сборкой')
+        booleanParam(name: 'CLEAN_MAVEN_CACHE',         defaultValue: false, description: '⚡ Фигачить кэш Maven (.m2/repository) перед сборкой')
+        booleanParam(name: 'RUN_INTEGRATION_TESTS',     defaultValue: false, description: 'Запустить интеграционные тесты (Selenium) после деплоя')
     }
 
     environment {
@@ -129,6 +130,16 @@ pipeline {
                         echo "${app} did not become ready after 5 attempts"
                         exit 1
                     """
+                }
+            }
+        }
+
+        stage('Integration Tests') {
+            when { expression { params.RUN_INTEGRATION_TESTS } }
+            steps {
+                echo "🧪 Running integration tests (headless)..."
+                dir('brahma-webui-test') {
+                    sh 'mvn verify -Dselenide.headless=true'
                 }
             }
         }
