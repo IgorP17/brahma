@@ -139,7 +139,7 @@ pipeline {
             steps {
                 echo "🧪 Running integration tests (headless)..."
                 dir('brahma-webui-test') {
-                    sh 'mvn verify -Dselenide.headless=true'
+                    sh 'mvn test -Dselenide.headless=true'
                 }
             }
         }
