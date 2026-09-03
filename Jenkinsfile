@@ -23,15 +23,15 @@ pipeline {
 
         stage('Pre-pull Base Image') {
             steps {
-                echo "📦 Pre-pulling base image eclipse-temurin:21-jre..."
+                echo "📦 Ensuring base image eclipse-temurin:21-jre is available in Minikube..."
                 sh '''
                     eval $(minikube docker-env)
-                    # Проверяем локально, если нет — качаем через mirror
+                    # Проверяем, есть ли образ в кэше Minikube
                     if ! docker image inspect eclipse-temurin:21-jre > /dev/null 2>&1; then
-                        echo "Base image not found locally, pulling..."
+                        echo "Base image not in Minikube cache, pulling..."
                         docker pull eclipse-temurin:21-jre
                     else
-                        echo "Base image already available locally."
+                        echo "Base image already available in Minikube."
                     fi
                 '''
             }
