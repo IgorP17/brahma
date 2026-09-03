@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/openjdk-21-runtime:latest
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY target/*-runner.jar app.jar
 EXPOSE 8080
