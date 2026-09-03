@@ -148,10 +148,6 @@ pipeline {
     post {
         always {
             script {
-                // 1. Чистим рабочую папку Jenkins (исходники, target/, .jar)
-                echo "🧹 Cleaning Jenkins workspace..."
-                cleanWs()
-
                 // 2. Чистим старые Docker-образы в Minikube (теперь без фильтра по времени)
                 echo "🧹 Cleaning up unused Docker images in Minikube..."
                 sh 'eval $(minikube docker-env) && docker image prune -a -f'
