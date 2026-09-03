@@ -261,3 +261,7 @@ EOF
     В Jenkinsfile используй params.SERVICE для путей и имён.
 
 ----------
+
+
+https://IgorP17:token@github.com/IgorP17/brahma.git
+https://IgorP17:token@github.com/IgorP17/brahma.git
