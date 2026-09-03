@@ -1,0 +1,24 @@
+# 1. Настроить registry mirror
+sudo bash -c 'cat > /etc/docker/daemon.json << EOF
+{
+  "registry-mirrors": [
+    "https://mirror.gcr.io",
+    "https://public.registry.cnr.yandex.net"
+  ]
+}
+EOF'
+
+# 2. Перезапустить Docker
+sudo systemctl restart docker
+
+# 3. Предзагрузить базовый образ (на это может уйти 2-3 минуты)
+docker pull eclipse-temurin:21-jre
+
+-------------- ALT
+# На машине с хорошим доступом к Docker Hub:
+docker pull eclipse-temurin:21-jre
+docker save eclipse-temurin:21-jre > eclipse-temurin-21-jre.tar
+
+# Скопировать на виртуалку (scp/rsync)
+# Затем на виртуалке:
+docker load < eclipse-temurin-21-jre.tar
