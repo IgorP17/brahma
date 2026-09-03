@@ -21,6 +21,22 @@ pipeline {
             }
         }
 
+        stage('Pre-pull Base Image') {
+            steps {
+                echo "📦 Pre-pulling base image eclipse-temurin:21-jre..."
+                sh '''
+                    eval $(minikube docker-env)
+                    # Проверяем локально, если нет — качаем через mirror
+                    if ! docker image inspect eclipse-temurin:21-jre > /dev/null 2>&1; then
+                        echo "Base image not found locally, pulling..."
+                        docker pull eclipse-temurin:21-jre
+                    else
+                        echo "Base image already available locally."
+                    fi
+                '''
+            }
+        }
+
         stage('Clean Maven Cache') {
             when { expression { params.CLEAN_MAVEN_CACHE } }
             steps {
@@ -148,9 +164,9 @@ pipeline {
     post {
         always {
             script {
-                // 2. Чистим старые Docker-образы в Minikube (теперь без фильтра по времени)
+                // 2. Чистим только dangling-образы (без тегов, <none>)
                 echo "🧹 Cleaning up unused Docker images in Minikube..."
-                sh 'eval $(minikube docker-env) && docker image prune -a -f'
+                sh 'eval $(minikube docker-env) && docker image prune -f'
 
                 // 3. Чистим кэш сборщика Docker
                 sh 'eval $(minikube docker-env) && docker builder prune -f'
